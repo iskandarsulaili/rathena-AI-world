@@ -1,364 +1,379 @@
-/**
- * @file ai_beggar_agent.hpp
- * @brief AI Beggar agent for managing the Nameless Beggar character
- * @author rAthena Development Team
- * @date 2025-02-27
- *
- * This file contains the AI Beggar agent, which manages the Nameless Beggar character
- * that roams cities and interacts with players.
- */
-
 #ifndef AI_BEGGAR_AGENT_HPP
 #define AI_BEGGAR_AGENT_HPP
 
 #include <string>
 #include <vector>
-#include <unordered_map>
+#include <map>
 #include <memory>
 #include <mutex>
+#include <optional>
 
-#include "../common/ai_agent_base.hpp"
-#include "../memory/langchain_memory.hpp"
-#include "../config/dynamic_config.hpp"
+#include "../common/ai_agent.hpp"
+#include "../common/ai_types.hpp"
+#include "../common/ai_request.hpp"
+#include "../common/ai_response.hpp"
+#include "../memory/ai_memory.hpp"
+
+namespace rathena {
+namespace ai {
 
 /**
- * @brief AI Beggar agent
+ * @brief AI Beggar Agent
  * 
- * This class manages the Nameless Beggar character that roams cities and interacts with players.
+ * This agent is responsible for managing beggar NPCs in the game world.
+ * Beggars have unique personalities, stories, and quests that are generated
+ * dynamically based on the game world and player interactions.
  */
-class AIBeggarAgent : public AIAgentBase {
+class AIBeggarAgent : public AIAgent {
+private:
+    // Configuration
+    ConfigMap config_;
+    
+    // Memory manager
+    std::shared_ptr<AIMemory> memory_;
+    
+    // Cache for beggar data
+    std::map<int, std::map<std::string, std::string>> beggarCache_;
+    std::mutex beggarCacheMutex_;
+    
+    // Cache for beggar stories
+    std::map<int, std::string> storyCache_;
+    std::mutex storyCacheMutex_;
+    
+    // Cache for beggar quests
+    std::map<int, std::vector<std::map<std::string, std::string>>> questCache_;
+    std::mutex questCacheMutex_;
+    
+    // Cache for conversation history
+    std::map<std::pair<int, int>, std::vector<std::pair<std::string, std::string>>> conversationCache_;
+    std::mutex conversationCacheMutex_;
+    
+    /**
+     * @brief Load beggar data from the database
+     * 
+     * @return bool True if successful, false otherwise
+     */
+    bool LoadBeggarData();
+    
+    /**
+     * @brief Generate a beggar story
+     * 
+     * @param beggarId The beggar ID
+     * @param beggarData The beggar data
+     * @return std::string The generated story
+     */
+    std::string GenerateBeggarStory(int beggarId, const std::map<std::string, std::string>& beggarData);
+    
+    /**
+     * @brief Generate a beggar quest
+     * 
+     * @param beggarId The beggar ID
+     * @param charId The character ID
+     * @param beggarData The beggar data
+     * @param characterData The character data
+     * @return std::map<std::string, std::string> The generated quest
+     */
+    std::map<std::string, std::string> GenerateBeggarQuest(int beggarId, int charId, 
+                                                         const std::map<std::string, std::string>& beggarData,
+                                                         const std::map<std::string, std::string>& characterData);
+    
+    /**
+     * @brief Process a conversation with a beggar
+     * 
+     * @param beggarId The beggar ID
+     * @param charId The character ID
+     * @param message The message from the character
+     * @param beggarData The beggar data
+     * @param characterData The character data
+     * @return std::string The response from the beggar
+     */
+    std::string ProcessConversation(int beggarId, int charId, const std::string& message,
+                                   const std::map<std::string, std::string>& beggarData,
+                                   const std::map<std::string, std::string>& characterData);
+    
+    /**
+     * @brief Get the conversation history for a character and beggar
+     * 
+     * @param charId The character ID
+     * @param beggarId The beggar ID
+     * @return std::vector<std::pair<std::string, std::string>> The conversation history
+     */
+    std::vector<std::pair<std::string, std::string>> GetConversationHistory(int charId, int beggarId);
+    
+    /**
+     * @brief Add a conversation entry to the history
+     * 
+     * @param charId The character ID
+     * @param beggarId The beggar ID
+     * @param message The message from the character
+     * @param response The response from the beggar
+     */
+    void AddConversationEntry(int charId, int beggarId, const std::string& message, const std::string& response);
+    
+    /**
+     * @brief Check if a character has completed a beggar's quest
+     * 
+     * @param charId The character ID
+     * @param beggarId The beggar ID
+     * @param questId The quest ID
+     * @return bool True if the character has completed the quest, false otherwise
+     */
+    bool HasCompletedQuest(int charId, int beggarId, int questId);
+    
+    /**
+     * @brief Check if a character has the required items for a beggar's quest
+     * 
+     * @param charId The character ID
+     * @param questData The quest data
+     * @return bool True if the character has the required items, false otherwise
+     */
+    bool HasRequiredItems(int charId, const std::map<std::string, std::string>& questData);
+    
+    /**
+     * @brief Remove required items from a character's inventory
+     * 
+     * @param charId The character ID
+     * @param questData The quest data
+     * @return bool True if successful, false otherwise
+     */
+    bool RemoveRequiredItems(int charId, const std::map<std::string, std::string>& questData);
+    
+    /**
+     * @brief Give rewards to a character
+     * 
+     * @param charId The character ID
+     * @param questData The quest data
+     * @return bool True if successful, false otherwise
+     */
+    bool GiveRewards(int charId, const std::map<std::string, std::string>& questData);
+    
+    /**
+     * @brief Get character data from the database
+     * 
+     * @param charId The character ID
+     * @return std::map<std::string, std::string> The character data
+     */
+    std::map<std::string, std::string> GetCharacterData(int charId);
+    
+    /**
+     * @brief Get beggar data from the database
+     * 
+     * @param beggarId The beggar ID
+     * @return std::map<std::string, std::string> The beggar data
+     */
+    std::map<std::string, std::string> GetBeggarData(int beggarId);
+    
+    /**
+     * @brief Get quest data from the database
+     * 
+     * @param questId The quest ID
+     * @return std::map<std::string, std::string> The quest data
+     */
+    std::map<std::string, std::string> GetQuestData(int questId);
+    
+    /**
+     * @brief Generate a random personality for a beggar
+     * 
+     * @return std::map<std::string, std::string> The personality traits
+     */
+    std::map<std::string, std::string> GenerateRandomPersonality();
+    
+    /**
+     * @brief Generate a random appearance for a beggar
+     * 
+     * @param personality The personality traits
+     * @return std::map<std::string, std::string> The appearance traits
+     */
+    std::map<std::string, std::string> GenerateRandomAppearance(const std::map<std::string, std::string>& personality);
+    
+    /**
+     * @brief Generate a random location for a beggar
+     * 
+     * @return std::map<std::string, std::string> The location data
+     */
+    std::map<std::string, std::string> GenerateRandomLocation();
+    
 public:
     /**
      * @brief Constructor
+     * 
+     * @param config The configuration
+     * @param memory The memory manager
      */
-    AIBeggarAgent();
-
+    AIBeggarAgent(const ConfigMap& config, std::shared_ptr<AIMemory> memory);
+    
     /**
      * @brief Destructor
      */
     virtual ~AIBeggarAgent();
-
+    
     /**
      * @brief Initialize the agent
-     * @param config Configuration parameters
-     * @return True if initialization was successful, false otherwise
+     * 
+     * @return bool True if successful, false otherwise
      */
-    virtual bool initialize(const std::unordered_map<std::string, std::string>& config) override;
-
+    bool Initialize() override;
+    
     /**
-     * @brief Finalize the agent
+     * @brief Process an event
+     * 
+     * @param event The event
+     * @return AIResponse The response
      */
-    virtual void finalize() override;
-
+    AIResponse ProcessEvent(const AIEvent& event) override;
+    
     /**
-     * @brief Process a request
-     * @param request Request to process
-     * @param provider Provider to use
-     * @return Response
+     * @brief Get the agent type
+     * 
+     * @return AIAgentType The agent type
      */
-    virtual AIResponse processRequest(const AIRequest& request, AIProvider* provider = nullptr) override;
-
+    AIAgentType GetType() const override;
+    
     /**
-     * @brief Update the agent
-     * @param tick Current tick
+     * @brief Get the agent name
+     * 
+     * @return std::string The agent name
      */
-    void update(uint64 tick);
-
+    std::string GetName() const override;
+    
     /**
-     * @brief Handle player login
-     * @param sd Player data
+     * @brief Get the agent status
+     * 
+     * @return AIAgentStatus The agent status
      */
-    void handlePlayerLogin(struct map_session_data* sd);
-
+    AIAgentStatus GetStatus() const override;
+    
     /**
-     * @brief Handle player logout
-     * @param sd Player data
+     * @brief Create a new beggar
+     * 
+     * @param mapId The map ID
+     * @param x The x coordinate
+     * @param y The y coordinate
+     * @return int The beggar ID
      */
-    void handlePlayerLogout(struct map_session_data* sd);
-
+    int CreateBeggar(int mapId, int x, int y);
+    
     /**
-     * @brief Handle player movement
-     * @param sd Player data
-     * @param x X coordinate
-     * @param y Y coordinate
+     * @brief Delete a beggar
+     * 
+     * @param beggarId The beggar ID
+     * @return bool True if successful, false otherwise
      */
-    void handlePlayerMovement(struct map_session_data* sd, int x, int y);
-
+    bool DeleteBeggar(int beggarId);
+    
     /**
-     * @brief Handle player chat
-     * @param sd Player data
-     * @param message Chat message
+     * @brief List all beggars
+     * 
+     * @return std::vector<std::map<std::string, std::string>> The beggars
      */
-    void handlePlayerChat(struct map_session_data* sd, const std::string& message);
-
+    std::vector<std::map<std::string, std::string>> ListBeggars();
+    
     /**
-     * @brief Handle player trade request
-     * @param sd Player data
-     * @return True if trade request was accepted, false otherwise
+     * @brief Get beggar information
+     * 
+     * @param beggarId The beggar ID
+     * @return std::map<std::string, std::string> The beggar information
      */
-    bool handlePlayerTradeRequest(struct map_session_data* sd);
-
+    std::map<std::string, std::string> GetBeggarInfo(int beggarId);
+    
     /**
-     * @brief Handle player trade
-     * @param sd Player data
-     * @param items Items being traded
-     * @param item_count Number of items being traded
-     * @return True if trade was successful, false otherwise
+     * @brief Get beggar story
+     * 
+     * @param beggarId The beggar ID
+     * @return std::string The beggar story
      */
-    bool handlePlayerTrade(struct map_session_data* sd, struct item* items, int item_count);
-
+    std::string GetBeggarStory(int beggarId);
+    
     /**
-     * @brief Check if item is food
-     * @param item_id Item ID
-     * @return True if item is food, false otherwise
+     * @brief List beggar quests
+     * 
+     * @param beggarId The beggar ID
+     * @return std::vector<std::map<std::string, std::string>> The beggar quests
      */
-    bool isFood(int item_id);
-
+    std::vector<std::map<std::string, std::string>> ListBeggarQuests(int beggarId);
+    
     /**
-     * @brief Give reward to player
-     * @param sd Player data
-     * @return True if reward was given, false otherwise
+     * @brief Get beggar quest
+     * 
+     * @param beggarId The beggar ID
+     * @param questId The quest ID
+     * @return std::map<std::string, std::string> The beggar quest
      */
-    bool giveReward(struct map_session_data* sd);
-
+    std::map<std::string, std::string> GetBeggarQuest(int beggarId, int questId);
+    
     /**
-     * @brief Update player feeding streak
-     * @param sd Player data
-     * @param food_count Number of food items given
-     * @return True if streak was updated, false otherwise
+     * @brief Talk to beggar
+     * 
+     * @param charId The character ID
+     * @param beggarId The beggar ID
+     * @param message The message
+     * @return std::string The response
      */
-    bool updateFeedingStreak(struct map_session_data* sd, int food_count);
-
+    std::string TalkToBeggar(int charId, int beggarId, const std::string& message);
+    
     /**
-     * @brief Check if player has completed feeding streak
-     * @param sd Player data
-     * @return True if streak is complete, false otherwise
+     * @brief Accept beggar quest
+     * 
+     * @param charId The character ID
+     * @param beggarId The beggar ID
+     * @param questId The quest ID
+     * @return bool True if successful, false otherwise
      */
-    bool hasCompletedFeedingStreak(struct map_session_data* sd);
-
+    bool AcceptBeggarQuest(int charId, int beggarId, int questId);
+    
     /**
-     * @brief Give streak reward to player
-     * @param sd Player data
-     * @return True if reward was given, false otherwise
+     * @brief Complete beggar quest
+     * 
+     * @param charId The character ID
+     * @param beggarId The beggar ID
+     * @param questId The quest ID
+     * @return bool True if successful, false otherwise
      */
-    bool giveStreakReward(struct map_session_data* sd);
-
+    bool CompleteBeggarQuest(int charId, int beggarId, int questId);
+    
     /**
-     * @brief Update player fragment collection
-     * @param sd Player data
-     * @param fragment_count Number of fragments given
-     * @return True if collection was updated, false otherwise
+     * @brief Give item to beggar
+     * 
+     * @param charId The character ID
+     * @param beggarId The beggar ID
+     * @param itemId The item ID
+     * @param amount The amount
+     * @return std::string The response
      */
-    bool updateFragmentCollection(struct map_session_data* sd, int fragment_count);
-
+    std::string GiveItemToBeggar(int charId, int beggarId, int itemId, int amount);
+    
     /**
-     * @brief Check if player has enough fragments for special event
-     * @param sd Player data
-     * @return True if player has enough fragments, false otherwise
+     * @brief Give zeny to beggar
+     * 
+     * @param charId The character ID
+     * @param beggarId The beggar ID
+     * @param amount The amount
+     * @return std::string The response
      */
-    bool hasEnoughFragmentsForEvent(struct map_session_data* sd);
-
+    std::string GiveZenyToBeggar(int charId, int beggarId, int amount);
+    
     /**
-     * @brief Trigger special event for player
-     * @param sd Player data
-     * @return True if event was triggered, false otherwise
+     * @brief Move beggar
+     * 
+     * @param beggarId The beggar ID
+     * @param mapId The map ID
+     * @param x The x coordinate
+     * @param y The y coordinate
+     * @return bool True if successful, false otherwise
      */
-    bool triggerSpecialEvent(struct map_session_data* sd);
-
+    bool MoveBeggar(int beggarId, int mapId, int x, int y);
+    
     /**
-     * @brief Complete special event for player
-     * @param sd Player data
-     * @param result Event result (WIN, LOSE, DRAW)
-     * @return True if event was completed, false otherwise
+     * @brief Update beggar
+     * 
+     * @param beggarId The beggar ID
+     * @param data The data to update
+     * @return bool True if successful, false otherwise
      */
-    bool completeSpecialEvent(struct map_session_data* sd, const std::string& result);
-
-    /**
-     * @brief Give event reward to player
-     * @param sd Player data
-     * @return True if reward was given, false otherwise
-     */
-    bool giveEventReward(struct map_session_data* sd);
-
-    /**
-     * @brief Get current city
-     * @return Current city
-     */
-    std::string getCurrentCity();
-
-    /**
-     * @brief Set current city
-     * @param city City name
-     */
-    void setCurrentCity(const std::string& city);
-
-    /**
-     * @brief Get next city
-     * @return Next city
-     */
-    std::string getNextCity();
-
-    /**
-     * @brief Move to next city
-     * @return True if move was successful, false otherwise
-     */
-    bool moveToNextCity();
-
-    /**
-     * @brief Spawn in city
-     * @param city City name
-     * @return True if spawn was successful, false otherwise
-     */
-    bool spawnInCity(const std::string& city);
-
-    /**
-     * @brief Despawn from current city
-     * @return True if despawn was successful, false otherwise
-     */
-    bool despawnFromCurrentCity();
-
-    /**
-     * @brief Get players in current city
-     * @return Players in current city
-     */
-    std::vector<struct map_session_data*> getPlayersInCurrentCity();
-
-    /**
-     * @brief Get players near beggar
-     * @param range Range in cells
-     * @return Players near beggar
-     */
-    std::vector<struct map_session_data*> getPlayersNearBeggar(int range);
-
-    /**
-     * @brief Get random player in current city
-     * @return Random player in current city
-     */
-    struct map_session_data* getRandomPlayerInCurrentCity();
-
-    /**
-     * @brief Get random player near beggar
-     * @param range Range in cells
-     * @return Random player near beggar
-     */
-    struct map_session_data* getRandomPlayerNearBeggar(int range);
-
-    /**
-     * @brief Approach player
-     * @param sd Player data
-     * @return True if approach was successful, false otherwise
-     */
-    bool approachPlayer(struct map_session_data* sd);
-
-    /**
-     * @brief Initiate trade with player
-     * @param sd Player data
-     * @return True if trade initiation was successful, false otherwise
-     */
-    bool initiateTradeWithPlayer(struct map_session_data* sd);
-
-    /**
-     * @brief Chat with player
-     * @param sd Player data
-     * @param message Message to send
-     * @return True if chat was successful, false otherwise
-     */
-    bool chatWithPlayer(struct map_session_data* sd, const std::string& message);
-
-    /**
-     * @brief Generate chat message for player
-     * @param sd Player data
-     * @param context Context for message generation
-     * @return Generated message
-     */
-    std::string generateChatMessage(struct map_session_data* sd, const std::string& context);
-
-    /**
-     * @brief Log beggar activity
-     * @param char_id Character ID (0 for none)
-     * @param log_type Log type
-     * @param message Log message
-     * @return True if log was successful, false otherwise
-     */
-    bool logBeggarActivity(int char_id, const std::string& log_type, const std::string& message);
-
-    /**
-     * @brief Update beggar statistics
-     * @param stat_type Statistic type
-     * @param value Value to add
-     * @return True if update was successful, false otherwise
-     */
-    bool updateBeggarStatistics(const std::string& stat_type, int value);
-
-private:
-    /**
-     * @brief Load beggar configuration
-     * @return True if load was successful, false otherwise
-     */
-    bool loadBeggarConfiguration();
-
-    /**
-     * @brief Initialize beggar memory
-     * @return True if initialization was successful, false otherwise
-     */
-    bool initializeBeggarMemory();
-
-    /**
-     * @brief Schedule beggar appearances
-     * @return True if scheduling was successful, false otherwise
-     */
-    bool scheduleBeggarAppearances();
-
-    /**
-     * @brief Check for scheduled appearances
-     * @param tick Current tick
-     */
-    void checkScheduledAppearances(uint64 tick);
-
-    /**
-     * @brief Check for scheduled disappearances
-     * @param tick Current tick
-     */
-    void checkScheduledDisappearances(uint64 tick);
-
-    /**
-     * @brief Check for player interactions
-     * @param tick Current tick
-     */
-    void checkPlayerInteractions(uint64 tick);
-
-    /**
-     * @brief Reset daily statistics
-     * @return True if reset was successful, false otherwise
-     */
-    bool resetDailyStatistics();
-
-    std::string m_currentCity;                           ///< Current city
-    std::vector<std::string> m_cities;                   ///< Cities to visit
-    int m_currentCityIndex;                              ///< Current city index
-    std::string m_visitOrder;                            ///< Visit order (sequential, random)
-    time_t m_lastAppearanceTime;                         ///< Last appearance time
-    time_t m_nextAppearanceTime;                         ///< Next appearance time
-    time_t m_nextDisappearanceTime;                      ///< Next disappearance time
-    time_t m_nextCityMoveTime;                           ///< Next city move time
-    int m_currentAppearanceId;                           ///< Current appearance ID
-    std::unordered_map<int, time_t> m_playerInteractionCooldowns; ///< Player interaction cooldowns
-    std::unordered_map<int, int> m_playerInteractionsToday; ///< Player interactions today
-    std::vector<int> m_foodItemIds;                      ///< Food item IDs
-    int m_rewardItemId;                                  ///< Reward item ID
-    int m_rewardAmount;                                  ///< Reward amount
-    int m_fragmentThreshold;                             ///< Fragment threshold for special event
-    int m_requiredFeedingDays;                           ///< Required feeding days for streak
-    int m_requiredFeedingCount;                          ///< Required feeding count per day
-    bool m_streakResetOnMiss;                            ///< Whether to reset streak on miss
-    int m_streakRewardSkillId;                           ///< Streak reward skill ID
-    std::string m_streakRewardSkillName;                 ///< Streak reward skill name
-    std::shared_ptr<LangChainMemory> m_memory;           ///< Beggar memory
-    std::shared_ptr<DynamicConfig> m_config;             ///< Beggar configuration
-    bool m_initialized;                                  ///< Initialization flag
-    uint64 m_lastUpdateTick;                             ///< Last update tick
-    uint64 m_lastDailyResetTick;                         ///< Last daily reset tick
-    std::mutex m_mutex;                                  ///< Mutex for thread safety
+    bool UpdateBeggar(int beggarId, const std::map<std::string, std::string>& data);
 };
+
+} // namespace ai
+} // namespace rathena
 
 #endif // AI_BEGGAR_AGENT_HPP
