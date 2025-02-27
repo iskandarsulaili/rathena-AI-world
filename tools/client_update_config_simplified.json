@@ -1,0 +1,129 @@
+{
+  "version": "1.0.0",
+  "required_files": {
+    "dlls": {
+      "ai_client.dll": {
+        "version": "1.0.0",
+        "md5": "to_be_calculated",
+        "features": ["AI Protocol Support"],
+        "destination": "Client/"
+      },
+      "ai_network.dll": {
+        "version": "1.0.0",
+        "md5": "to_be_calculated",
+        "features": ["Network Communication"],
+        "destination": "Client/"
+      },
+      "ai_resource.dll": {
+        "version": "1.0.0",
+        "md5": "to_be_calculated",
+        "features": ["Resource Management"],
+        "destination": "Client/"
+      }
+    },
+    "config_files": {
+      "ai_client.ini": {
+        "content": {
+          "AI": {
+            "enabled": true,
+            "memory_cache": true,
+            "response_timeout": 5000,
+            "debug_level": 1
+          },
+          "Legends": {
+            "show_indicators": true,
+            "effect_quality": "high",
+            "sound_enabled": true
+          },
+          "Weather": {
+            "effects_enabled": true,
+            "transition_time": 3000
+          }
+        },
+        "destination": "Client/System/"
+      },
+      "ai_mapping.ini": {
+        "content": {
+          "ClassMapping": {
+            "4060": "4008",
+            "4061": "4010",
+            "4062": "4015",
+            "4063": "4012",
+            "4064": "4019",
+            "4065": "4020",
+            "4066": "4016",
+            "4067": "4021",
+            "4068": "4043",
+            "4069": "4044",
+            "4070": "4023",
+            "4071": "4047",
+            "4072": "4056"
+          },
+          "SkillMapping": {
+            "8001": "2043",
+            "8002": "2315",
+            "8003": "2299",
+            "8004": "2216",
+            "8005": "2413",
+            "8006": "2418",
+            "8007": "2255",
+            "8008": "2478",
+            "8009": "2509",
+            "8010": "2284",
+            "8011": "2038",
+            "8012": "2309",
+            "8013": "2428"
+          }
+        },
+        "destination": "Client/System/"
+      }
+    }
+  },
+  "directory_structure": {
+    "Client/System": {}
+  },
+  "validation_steps": {
+    "file_integrity": [
+      "verify_dll_versions",
+      "validate_directory_structure"
+    ],
+    "configuration": [
+      "verify_ini_files",
+      "check_permissions"
+    ],
+    "performance": [
+      "check_memory_requirements",
+      "verify_cache_setup"
+    ]
+  },
+  "rollback": {
+    "backup_locations": [
+      "./backup/dll",
+      "./backup/config"
+    ],
+    "restore_points": {
+      "pre_update": {
+        "config": ["Client/System/ai_client.ini", "Client/System/ai_mapping.ini"]
+      },
+      "post_dll": {
+        "files": ["Client/ai_client.dll", "Client/ai_network.dll", "Client/ai_resource.dll"]
+      },
+      "complete": {
+        "timestamp": "auto_generated",
+        "checksum": "calculated_on_backup"
+      }
+    }
+  },
+  "error_handling": {
+    "update_failure": {
+      "action": "automatic_rollback",
+      "notify": true,
+      "log_level": "error"
+    },
+    "validation_failure": {
+      "action": "retry_validation",
+      "max_attempts": 3,
+      "notify": true
+    }
+  }
+}

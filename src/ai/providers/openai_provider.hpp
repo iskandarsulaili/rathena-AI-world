@@ -1,130 +1,131 @@
-/**
- * @file openai_provider.hpp
- * @brief OpenAI provider for rAthena AI World
- * @author rAthena Development Team
- * @date 2025-02-26
- *
- * This file contains the OpenAI provider implementation.
- */
-
 #ifndef OPENAI_PROVIDER_HPP
 #define OPENAI_PROVIDER_HPP
 
 #include <string>
-#include <memory>
 #include <mutex>
-
+#include <atomic>
 #include "../common/ai_provider.hpp"
-#include "../common/ai_request.hpp"
-#include "../common/ai_response.hpp"
+#include "../common/ai_types.hpp"
+#include "../../common/http_client.hpp"
+
+namespace rathena {
+namespace ai {
 
 /**
- * @brief OpenAI provider
+ * @brief OpenAI provider implementation
  * 
- * This class implements the AI provider interface for OpenAI.
+ * This class implements the AIProvider interface for the OpenAI API.
  */
 class OpenAIProvider : public AIProvider {
+private:
+    std::string name_;
+    std::string type_;
+    std::string apiKey_;
+    std::string model_;
+    int maxTokens_;
+    float temperature_;
+    float topP_;
+    float frequencyPenalty_;
+    float presencePenalty_;
+    std::atomic<AIProviderStatus> status_;
+    mutable std::mutex mutex_;
+    
+    // HTTP client for API requests
+    std::unique_ptr<HttpClient> httpClient_;
+    
+    // Capabilities
+    AICapabilities capabilities_;
+
 public:
     /**
      * @brief Constructor
+     * 
+     * @param name The provider name
+     * @param apiKey The OpenAI API key
+     * @param model The model to use
+     * @param config Additional configuration
      */
-    OpenAIProvider();
-
+    OpenAIProvider(const std::string& name, const std::string& apiKey, const std::string& model, const ConfigMap& config);
+    
     /**
      * @brief Destructor
      */
-    virtual ~OpenAIProvider();
-
+    ~OpenAIProvider() override;
+    
     /**
      * @brief Initialize the provider
-     * @return True if initialization was successful, false otherwise
+     * 
+     * @return true if initialization was successful, false otherwise
      */
-    bool initialize() override;
-
+    bool Initialize() override;
+    
     /**
-     * @brief Finalize the provider
+     * @brief Generate a response to a request
+     * 
+     * @param request The AI request
+     * @return AIResponse The generated response
      */
-    void finalize() override;
-
-    /**
-     * @brief Check if the provider is enabled
-     * @return True if enabled, false otherwise
-     */
-    bool isEnabled() const override;
-
-    /**
-     * @brief Get the provider name
-     * @return Provider name
-     */
-    std::string getName() const override;
-
-    /**
-     * @brief Process an AI request
-     * @param request The AI request to process
-     * @return The AI response
-     */
-    AIResponse processRequest(const AIRequest& request) override;
-
-    /**
-     * @brief Reload configuration
-     * @return True if reload was successful, false otherwise
-     */
-    bool reloadConfig() override;
-
+    AIResponse GenerateResponse(const AIRequest& request) override;
+    
     /**
      * @brief Get the provider's capabilities
-     * @return JSON string describing the provider's capabilities
+     * 
+     * @return AICapabilities The provider's capabilities
      */
-    std::string getCapabilities() const override;
-
+    AICapabilities GetCapabilities() const override;
+    
     /**
      * @brief Get the provider's status
-     * @return JSON string describing the provider's status
+     * 
+     * @return AIProviderStatus The provider's status
      */
-    std::string getStatus() const override;
+    AIProviderStatus GetStatus() const override;
+    
+    /**
+     * @brief Set the provider's status
+     * 
+     * @param status The new status
+     */
+    void SetStatus(AIProviderStatus status) override;
+    
+    /**
+     * @brief Get the provider's name
+     * 
+     * @return std::string The provider's name
+     */
+    std::string GetName() const override;
+    
+    /**
+     * @brief Get the provider's type
+     * 
+     * @return std::string The provider's type
+     */
+    std::string GetType() const override;
 
 private:
     /**
-     * @brief Load configuration
-     * @return True if loading was successful, false otherwise
+     * @brief Build the request payload for the OpenAI API
+     * 
+     * @param request The AI request
+     * @return std::string The JSON payload
      */
-    bool loadConfig();
-
+    std::string BuildRequestPayload(const AIRequest& request);
+    
     /**
-     * @brief Make an API request to OpenAI
-     * @param endpoint API endpoint
-     * @param requestBody Request body
-     * @param apiKey API key
-     * @return Response body
+     * @brief Parse the response from the OpenAI API
+     * 
+     * @param responseJson The JSON response
+     * @return AIResponse The parsed response
      */
-    std::string makeApiRequest(const std::string& endpoint, const std::string& requestBody, const std::string& apiKey);
-
+    AIResponse ParseResponse(const std::string& responseJson);
+    
     /**
-     * @brief Create a chat completion request
-     * @param request AI request
-     * @return Response from the API
+     * @brief Initialize the provider's capabilities
      */
-    AIResponse createChatCompletion(const AIRequest& request);
-
-    /**
-     * @brief Create an embeddings request
-     * @param request AI request
-     * @return Response from the API
-     */
-    AIResponse createEmbeddings(const AIRequest& request);
-
-    bool m_initialized;                  ///< Initialization flag
-    bool m_enabled;                      ///< Enabled flag
-    std::string m_apiKey;                ///< API key
-    std::string m_organizationId;        ///< Organization ID
-    std::string m_model;                 ///< Model name
-    float m_temperature;                 ///< Temperature
-    int m_maxTokens;                     ///< Maximum tokens
-    float m_topP;                        ///< Top-p sampling parameter
-    float m_frequencyPenalty;            ///< Frequency penalty
-    float m_presencePenalty;             ///< Presence penalty
-    int m_requestTimeout;                ///< Request timeout in milliseconds
-    mutable std::mutex m_mutex;          ///< Mutex for thread safety
+    void InitializeCapabilities();
 };
+
+} // namespace ai
+} // namespace rathena
 
 #endif // OPENAI_PROVIDER_HPP

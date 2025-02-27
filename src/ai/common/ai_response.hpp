@@ -1,103 +1,226 @@
-/**
- * @file ai_response.hpp
- * @brief AI response class for rAthena AI World
- * @author rAthena Development Team
- * @date 2025-02-26
- *
- * This file contains the AI response class that represents a response from an AI provider.
- */
-
 #ifndef AI_RESPONSE_HPP
 #define AI_RESPONSE_HPP
 
 #include <string>
 #include <vector>
-#include <unordered_map>
+#include <map>
+#include "ai_types.hpp"
+
+namespace rathena {
+namespace ai {
 
 /**
- * @brief AI response class
+ * @brief AI response builder
  * 
- * This class represents a response from an AI provider.
+ * This class is used to build AI responses.
  */
-class AIResponse {
+class AIResponseBuilder {
+private:
+    AIResponse response_;
+    
 public:
     /**
      * @brief Constructor
-     * @param success Success flag
-     * @param content Response content
      */
-    AIResponse(bool success, const std::string& content);
-
+    AIResponseBuilder();
+    
     /**
-     * @brief Check if the response was successful
-     * @return True if successful, false otherwise
+     * @brief Set the response type
+     * 
+     * @param type The response type
+     * @return AIResponseBuilder& The builder
      */
-    bool isSuccess() const;
-
+    AIResponseBuilder& WithType(AIResponseType type);
+    
     /**
-     * @brief Get the response content
-     * @return Response content
+     * @brief Set the response text
+     * 
+     * @param text The response text
+     * @return AIResponseBuilder& The builder
      */
-    const std::string& getContent() const;
-
+    AIResponseBuilder& WithText(const std::string& text);
+    
     /**
-     * @brief Set a metadata value
-     * @param key Metadata key
-     * @param value Metadata value
+     * @brief Add an action
+     * 
+     * @param key The action key
+     * @param value The action value
+     * @return AIResponseBuilder& The builder
      */
-    void setMetadata(const std::string& key, const std::string& value);
-
+    AIResponseBuilder& WithAction(const std::string& key, const std::string& value);
+    
     /**
-     * @brief Get a metadata value
-     * @param key Metadata key
-     * @return Metadata value, or empty string if not found
+     * @brief Set the actions
+     * 
+     * @param actions The actions
+     * @return AIResponseBuilder& The builder
      */
-    std::string getMetadata(const std::string& key) const;
-
+    AIResponseBuilder& WithActions(const std::map<std::string, std::string>& actions);
+    
     /**
-     * @brief Check if a metadata key exists
-     * @param key Metadata key
-     * @return True if the metadata key exists, false otherwise
+     * @brief Add metadata
+     * 
+     * @param key The metadata key
+     * @param value The metadata value
+     * @return AIResponseBuilder& The builder
      */
-    bool hasMetadata(const std::string& key) const;
-
+    AIResponseBuilder& WithMetadata(const std::string& key, const std::string& value);
+    
     /**
-     * @brief Get all metadata
-     * @return Map of all metadata
+     * @brief Set the metadata
+     * 
+     * @param metadata The metadata
+     * @return AIResponseBuilder& The builder
      */
-    const std::unordered_map<std::string, std::string>& getMetadata() const;
-
+    AIResponseBuilder& WithMetadata(const std::map<std::string, std::string>& metadata);
+    
+    /**
+     * @brief Set the success flag
+     * 
+     * @param success The success flag
+     * @return AIResponseBuilder& The builder
+     */
+    AIResponseBuilder& WithSuccess(bool success);
+    
     /**
      * @brief Set the error message
-     * @param errorMessage Error message
+     * 
+     * @param errorMessage The error message
+     * @return AIResponseBuilder& The builder
      */
-    void setErrorMessage(const std::string& errorMessage);
-
+    AIResponseBuilder& WithErrorMessage(const std::string& errorMessage);
+    
     /**
-     * @brief Get the error message
-     * @return Error message
+     * @brief Build the response
+     * 
+     * @return AIResponse The built response
      */
-    const std::string& getErrorMessage() const;
-
-    /**
-     * @brief Create a successful response
-     * @param content Response content
-     * @return Successful response
-     */
-    static AIResponse createSuccess(const std::string& content);
-
-    /**
-     * @brief Create an error response
-     * @param errorMessage Error message
-     * @return Error response
-     */
-    static AIResponse createError(const std::string& errorMessage);
-
-private:
-    bool m_success;                                          ///< Success flag
-    std::string m_content;                                   ///< Response content
-    std::string m_errorMessage;                              ///< Error message
-    std::unordered_map<std::string, std::string> m_metadata; ///< Response metadata
+    AIResponse Build() const;
 };
+
+/**
+ * @brief Create a text response
+ * 
+ * @param text The response text
+ * @return AIResponse The text response
+ */
+AIResponse CreateTextResponse(const std::string& text);
+
+/**
+ * @brief Create an action response
+ * 
+ * @param actions The actions
+ * @return AIResponse The action response
+ */
+AIResponse CreateActionResponse(const std::map<std::string, std::string>& actions);
+
+/**
+ * @brief Create a skill response
+ * 
+ * @param skillId The skill ID
+ * @param skillLevel The skill level
+ * @param targetId The target ID
+ * @return AIResponse The skill response
+ */
+AIResponse CreateSkillResponse(int skillId, int skillLevel, int targetId);
+
+/**
+ * @brief Create a quest response
+ * 
+ * @param questId The quest ID
+ * @param action The quest action
+ * @param metadata Additional metadata
+ * @return AIResponse The quest response
+ */
+AIResponse CreateQuestResponse(int questId, const std::string& action, const std::map<std::string, std::string>& metadata);
+
+/**
+ * @brief Create a bloodline response
+ * 
+ * @param bloodlineId The bloodline ID
+ * @param action The bloodline action
+ * @param metadata Additional metadata
+ * @return AIResponse The bloodline response
+ */
+AIResponse CreateBloodlineResponse(int bloodlineId, const std::string& action, const std::map<std::string, std::string>& metadata);
+
+/**
+ * @brief Create a world response
+ * 
+ * @param action The world action
+ * @param metadata Additional metadata
+ * @return AIResponse The world response
+ */
+AIResponse CreateWorldResponse(const std::string& action, const std::map<std::string, std::string>& metadata);
+
+/**
+ * @brief Create an error response
+ * 
+ * @param errorMessage The error message
+ * @return AIResponse The error response
+ */
+AIResponse CreateErrorResponse(const std::string& errorMessage);
+
+/**
+ * @brief Parse a response from a provider
+ * 
+ * @param responseText The response text
+ * @param responseType The response type
+ * @return AIResponse The parsed response
+ */
+AIResponse ParseProviderResponse(const std::string& responseText, AIResponseType responseType);
+
+/**
+ * @brief Extract actions from a response text
+ * 
+ * @param responseText The response text
+ * @return std::map<std::string, std::string> The extracted actions
+ */
+std::map<std::string, std::string> ExtractActionsFromText(const std::string& responseText);
+
+/**
+ * @brief Format a response for display
+ * 
+ * @param response The response
+ * @return std::string The formatted response
+ */
+std::string FormatResponseForDisplay(const AIResponse& response);
+
+/**
+ * @brief Check if a response is successful
+ * 
+ * @param response The response
+ * @return true if the response is successful, false otherwise
+ */
+bool IsResponseSuccessful(const AIResponse& response);
+
+/**
+ * @brief Check if a response has actions
+ * 
+ * @param response The response
+ * @return true if the response has actions, false otherwise
+ */
+bool HasResponseActions(const AIResponse& response);
+
+/**
+ * @brief Get an action from a response
+ * 
+ * @param response The response
+ * @param key The action key
+ * @return std::string The action value, or an empty string if not found
+ */
+std::string GetResponseAction(const AIResponse& response, const std::string& key);
+
+/**
+ * @brief Get metadata from a response
+ * 
+ * @param response The response
+ * @param key The metadata key
+ * @return std::string The metadata value, or an empty string if not found
+ */
+std::string GetResponseMetadata(const AIResponse& response, const std::string& key);
+
+} // namespace ai
+} // namespace rathena
 
 #endif // AI_RESPONSE_HPP

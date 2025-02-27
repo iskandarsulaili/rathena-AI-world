@@ -1,0 +1,146 @@
+{
+  "version": "1.0.0",
+  "required_files": {
+    "grf": {
+      "data.grf": {
+        "additions": [
+          "sprite/¥npc/ai_legends/*.spr",
+          "sprite/¥npc/ai_legends/*.act",
+          "effect/ai_skills/*.str",
+          "effect/ai_weather/*.str",
+          "sound/ai_voice/*.wav",
+          "sound/ai_effects/*.wav"
+        ],
+        "md5": "to_be_generated_after_update",
+        "size": "estimated_500mb"
+      },
+      "rdata.grf": {
+        "additions": [
+          "maps/ai_legends/*.rsw",
+          "maps/ai_legends/*.gat",
+          "maps/ai_legends/*.gnd",
+          "datainfo/ai_items.txt",
+          "datainfo/ai_skills.txt"
+        ],
+        "md5": "to_be_generated_after_update",
+        "size": "estimated_200mb"
+      }
+    },
+    "dlls": {
+      "CDClient.dll": {
+        "version": "2.1.0",
+        "md5": "to_be_calculated",
+        "features": ["AI Protocol Support"]
+      },
+      "npkcrypt.dll": {
+        "version": "1.5.0",
+        "md5": "to_be_calculated",
+        "features": ["AI Data Encryption"]
+      },
+      "NPCIPHER.DLL": {
+        "version": "3.0.0",
+        "md5": "to_be_calculated",
+        "features": ["Enhanced Security"]
+      }
+    }
+  },
+  "directory_structure": {
+    "AI": {
+      "legends": {
+        "behaviors": {},
+        "paths": {},
+        "interactions": {},
+        "memory": {}
+      },
+      "weather": {
+        "patterns": {},
+        "effects": {}
+      },
+      "system": {
+        "config.ini": "default_content",
+        "cache": {}
+      }
+    },
+    "AI_sakray": {
+      "test": {},
+      "debug": {},
+      "logs": {}
+    }
+  },
+  "configuration_files": {
+    "DATA.INI": {
+      "additions": [
+        "[Data]",
+        "2=ai_legends.grf"
+      ]
+    },
+    "ai_client.ini": {
+      "content": {
+        "AI": {
+          "enabled": true,
+          "memory_cache": true,
+          "response_timeout": 5000,
+          "debug_level": 1
+        },
+        "Legends": {
+          "show_indicators": true,
+          "effect_quality": "high",
+          "sound_enabled": true
+        },
+        "Weather": {
+          "effects_enabled": true,
+          "transition_time": 3000
+        }
+      }
+    }
+  },
+  "validation_steps": {
+    "file_integrity": [
+      "check_grf_contents",
+      "verify_dll_versions",
+      "validate_directory_structure"
+    ],
+    "configuration": [
+      "verify_ini_files",
+      "check_permissions",
+      "test_ai_connection"
+    ],
+    "performance": [
+      "check_memory_requirements",
+      "verify_cache_setup",
+      "test_network_latency"
+    ]
+  },
+  "rollback": {
+    "backup_locations": [
+      "./backup/grf",
+      "./backup/dll",
+      "./backup/config"
+    ],
+    "restore_points": {
+      "pre_update": {
+        "files": ["data.grf", "rdata.grf"],
+        "config": ["DATA.INI"]
+      },
+      "post_dll": {
+        "files": ["CDClient.dll", "npkcrypt.dll", "NPCIPHER.DLL"]
+      },
+      "complete": {
+        "timestamp": "auto_generated",
+        "checksum": "calculated_on_backup"
+      }
+    }
+  },
+  "error_handling": {
+    "update_failure": {
+      "action": "automatic_rollback",
+      "notify": true,
+      "log_level": "error"
+    },
+    "validation_failure": {
+      "action": "retry_validation",
+      "max_attempts": 3,
+      "notify": true
+    }
+  }
+}
