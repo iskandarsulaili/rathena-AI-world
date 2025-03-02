@@ -3,29 +3,9 @@
 ## Overview
 Advanced AI-driven gameplay enhancement and P2P network security system for rAthena, providing intelligent NPCs, dynamic world evolution, and robust protection.
 
-## ✨ Implemented Features
+## ✨ Features
 
 ### AI Agents
-
-#### AI Legends System
-- 36 unique AI Legend characters representing each final job class
-- Progressive character development from novice to final job classes
-- Contrasting MBTI personalities for unique character interactions
-- Detailed backstories and relationships between characters
-- MVP battle assistance for the 5 weakest parties
-- 1v1 PvP duels with same-class players
-- Global chat interactions between AI characters
-- Secret skills that can be taught to worthy players
-
-#### The Nameless Beggar
-- Mysterious master character connecting all AI Legends
-- Daily city-roaming system visiting different locations
-- Food request and reward system encouraging player interaction
-- Feeding streak system rewarding consistent interaction
-- Special event triggered by collecting 100 Ancient Scroll Fragments
-- Epic grand PK fight between all AI Legends and their master lasting 8-18 minutes
-- Master's victory through perfect skill combinations from all job classes
-- Narrative connection revealing all AI Legends as the Beggar's disciples
 
 #### Mayor AI Agent
 - Weekly server statistics analysis
@@ -135,22 +115,6 @@ ai_providers: {
 }
 ```
 
-### AI Legends Configuration
-```ini
-ai_legends_enabled: true
-ai_legends_provider: "azure_openai"
-ai_legends_model: "gpt-4o"
-ai_legends_power_advantage: 8
-```
-
-### Beggar Configuration
-```ini
-ai_beggar_enabled: true
-ai_beggar_provider: "azure_openai"
-ai_beggar_model: "gpt-4o"
-ai_beggar_cities: ["prontera", "geffen", "payon", "morocc", "alberta"]
-```
-
 ### Mayor Configuration
 ```ini
 ai_mayor_enabled: true
@@ -251,37 +215,7 @@ valgrind --leak-check=full ./network_tests
 drmemory.exe -light -- network_tests.exe
 ```
 
-## 📚 Documentation
-
-### AI Systems
-- [AI Legends System](docs/AI_LEGENDS.md)
-- [AI Legends Profiles](docs/AI_LEGENDS_PROFILES.md)
-- [Nameless Beggar System](docs/AI_BEGGAR.md)
-- [Mayor Agent System](docs/AI_MAYOR.md)
-- [AI Development Roadmap](docs/AI_DEVELOPMENT_ROADMAP.md)
-- [AI Agents Overview](docs/AI_AGENTS.md)
-- [AI Implementation Summary](docs/AI_IMPLEMENTATION_SUMMARY.md)
-- [AI Agents Optimization](docs/AI_AGENTS_OPTIMIZATION.md)
-
-### Network & Security
-- [Security Review](docs/SECURITY_REVIEW.md)
-- [P2P Hosting Guide](docs/P2P_HOSTING.md)
-- [Future Features](docs/FUTURE_FEATURES.md)
-- [Feature Details](docs/FEATURE_DETAILS.md)
-
 ## 🔜 Upcoming Features
-
-### AI Systems
-- Cross-Class Synthesis system
-- Dynamic World Evolution
-- Legend Bloodlines system
-- Economic Ecosystem
-- Social Dynamics system
-- Advanced Combat Mechanics
-- Personal Housing system
-- Time Manipulation system
-- Guild Evolution system
-- Dimensional Warfare
 
 ### Security
 - TLS implementation
@@ -291,10 +225,7 @@ drmemory.exe -light -- network_tests.exe
 - Packet encryption
 
 ### Monitoring
-- Real-time dashboard
-- Advanced analytics
-- Predictive monitoring
-- Custom metrics
+- Real-time dashboard using [FluxCP-AI-world-p2p-hosting](https://github.com/iskandarsulaili/FluxCP-AI-world-p2p-hosting)
 
 ### Performance
 - Advanced caching
