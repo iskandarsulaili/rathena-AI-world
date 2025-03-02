@@ -1,72 +1,316 @@
-<img src="doc/logo.png" align="right" height="90" />
+# rAthena AI World
 
-# rAthena
-![clang](https://img.shields.io/github/actions/workflow/status/rathena/rathena/build_servers_clang.yml?label=clang%20build&logo=llvm) ![cmake](https://img.shields.io/github/actions/workflow/status/rathena/rathena/build_servers_cmake.yml?label=cmake%20build&logo=cmake) ![gcc](https://img.shields.io/github/actions/workflow/status/rathena/rathena/build_servers_gcc.yml?label=gcc%20build&logo=gnu) ![ms](https://img.shields.io/github/actions/workflow/status/rathena/rathena/build_servers_msbuild.yml?label=ms%20build&logo=visualstudio) ![GitHub](https://img.shields.io/github/license/rathena/rathena.svg) ![commit activity](https://img.shields.io/github/commit-activity/w/rathena/rathena) ![GitHub repo size](https://img.shields.io/github/repo-size/rathena/rathena.svg)
-> rAthena is a collaborative software development project revolving around the creation of a robust massively multiplayer online role playing game (MMORPG) server package. Written in C++, the program is very versatile and provides NPCs, warps and modifications. The project is jointly managed by a group of volunteers located around the world as well as a tremendous community providing QA and support. rAthena is a continuation of the eAthena project.
+## Overview
+Advanced AI-driven gameplay enhancement and P2P network security system for rAthena, providing intelligent NPCs, dynamic world evolution, and robust protection.
 
-[Forum](https://rathena.org/board)|[Discord](https://rathena.org/discord)|[Wiki](https://github.com/rathena/rathena/wiki)|[FluxCP](https://github.com/rathena/FluxCP)|[Crowdfunding](https://rathena.org/board/crowdfunding/)|[Fork and Pull Request Q&A](https://rathena.org/board/topic/86913-pull-request-qa/)
---------|--------|--------|--------|--------|--------
+## ✨ Implemented Features
 
-### Table of Contents
-1. [Prerequisites](#1-prerequisites)
-2. [Installation](#2-installation)
-3. [Troubleshooting](#3-troubleshooting)
-4. [More Documentation](#4-more-documentation)
-5. [How to Contribute](#5-how-to-contribute)
-6. [License](#6-license)
+### AI Agents
 
-## 1. Prerequisites
-Before installing rAthena there are certain tools and applications you will need which
-differs between the varying operating systems available.
+#### AI Legends System
+- 36 unique AI Legend characters representing each final job class
+- Progressive character development from novice to final job classes
+- Contrasting MBTI personalities for unique character interactions
+- Detailed backstories and relationships between characters
+- MVP battle assistance for the 5 weakest parties
+- 1v1 PvP duels with same-class players
+- Global chat interactions between AI characters
+- Secret skills that can be taught to worthy players
 
-### Hardware
-Hardware Type | Minimum | Recommended
-------|------|------
-CPU | 1 Core | 2 Cores
-RAM | 1 GB | 2 GB
-Disk Space | 300 MB | 500 MB
+#### The Nameless Beggar
+- Mysterious master character connecting all AI Legends
+- Daily city-roaming system visiting different locations
+- Food request and reward system encouraging player interaction
+- Feeding streak system rewarding consistent interaction
+- Special event triggered by collecting 100 Ancient Scroll Fragments
+- Epic grand PK fight between all AI Legends and their master lasting 8-18 minutes
+- Master's victory through perfect skill combinations from all job classes
+- Narrative connection revealing all AI Legends as the Beggar's disciples
 
-### Operating System & Preferred Compiler
-Operating System | Compiler
-------|------
-Linux  | [gcc-6 or newer](https://www.gnu.org/software/gcc/gcc-6/) / [Make](https://www.gnu.org/software/make/)
-Windows | [MS Visual Studio 2017 or newer](https://www.visualstudio.com/downloads/)
+#### Mayor AI Agent
+- Weekly server statistics analysis
+- Dynamic event creation based on player behavior
+- Player retention and acquisition strategies
+- Comprehensive reporting on server health and trends
+- Tailored events for different player segments
+- Event creation system with various types and difficulties
+- Integration with other AI systems for coordinated experiences
 
-### Required Applications
-Application | Name
-------|------
-Database | [MySQL 5 or newer](https://www.mysql.com/downloads/) / [MariaDB 5 or newer](https://downloads.mariadb.org/)
-Git | [Windows](https://gitforwindows.org/) / [Linux](https://git-scm.com/download/linux)
+#### AI Integration
+- Support for Azure OpenAI, OpenAI, and DeepSeek V3 providers
+- LangChain integration for context memory management
+- Dynamic configuration systems for each AI character
+- Fallback mechanisms for offline operation
 
-### Optional Applications
-Application | Name
-------|------
-Database | [MySQL Workbench 5 or newer](http://www.mysql.com/downloads/workbench/)
+### P2P and Network Security
+- Thread-safe packet monitoring
+- Resource usage tracking
+- Performance metrics collection
+- Host statistics monitoring
+- P2P hosting system with host scoring
+- Host eligibility validation
+- Real-time gaming experience optimization
+- Data synchronization with Redis/PostgreSQL support
+- SQL injection prevention
+- Memory safety improvements
+- Basic DDoS protection
+- Cross-platform security implementation
+- WARP P2P Security System integration
 
-## 2. Installation 
+### Monitoring System
+- Real-time connection tracking
+- Resource usage monitoring
+- Performance metrics collection
+- Security event logging
+- Host status tracking
+- Advanced P2P network analytics
 
-### Full Installation Instructions
-  * [Windows](https://github.com/rathena/rathena/wiki/Install-on-Windows)
-  * [CentOS](https://github.com/rathena/rathena/wiki/Install-on-Centos)
-  * [Debian](https://github.com/rathena/rathena/wiki/Install-on-Debian)
-  * [FreeBSD](https://github.com/rathena/rathena/wiki/Install-on-FreeBSD)
+### Development Tools
+- Cross-platform build system
+- Comprehensive test suite
+- Memory leak detection
+- Thread safety verification
+- Performance testing
+- Build verification scripts
+- Client update utilities
 
-## 3. Troubleshooting
+## 🚀 Getting Started
 
-If you're having problems with starting your server, the first thing you should
-do is check what's happening on your consoles. More often that not, all support issues
-can be solved simply by looking at the error messages given. Check out the [wiki](https://github.com/rathena/rathena/wiki)
-or [forums](https://rathena.org/forum) if you need more support on troubleshooting.
+### Prerequisites
+- CMake 3.15+
+- C++17 compliant compiler
+- MySQL 5.7+
+- libconfig
+- nlohmann-json
+- Redis (optional, for P2P data sync)
+- PostgreSQL (optional, for P2P data sync)
+- Azure OpenAI, OpenAI, or DeepSeek API key (for AI features)
 
-## 4. More Documentation
-rAthena has a large collection of help files and sample NPC scripts located in the /doc/
-directory. These include detailed explanations of NPC script commands, atcommands (@),
-group permissions, item bonuses, and packet structures, among many other topics. We
-recommend that all users take the time to look over this directory before asking for
-assistance elsewhere.
+### Building
 
-## 5. How to Contribute
-Details on how to contribute to rAthena can be found in [CONTRIBUTING.md](https://github.com/rathena/rathena/blob/master/.github/CONTRIBUTING.md)!
+#### Linux
+```bash
+# Build and test
+./test_build.sh
 
-## 6. License
-Copyright (c) rAthena Development Team - Licensed under [GNU General Public License v3.0](https://github.com/rathena/rathena/blob/master/LICENSE)
+# Build only
+mkdir build && cd build
+cmake -DBUILD_TESTING=ON ..
+make
+```
+
+#### Windows
+```batch
+# Build and test
+test_build.bat
+
+# Build only
+mkdir build && cd build
+cmake -DBUILD_TESTING=ON -G "Visual Studio 16 2019" ..
+cmake --build . --config Release
+```
+
+## 🔧 Configuration
+
+### AI Providers Configuration
+```ini
+ai_providers: {
+    azure_openai: {
+        enabled: true
+        api_key: "your-api-key"
+        endpoint: "your-endpoint"
+        deployment: "gpt-4o"
+        api_version: "2023-05-15"
+    }
+    openai: {
+        enabled: true
+        api_key: "your-api-key"
+        model: "gpt-4o"
+    }
+    deepseek: {
+        enabled: true
+        api_key: "your-api-key"
+        model: "deepseek-v3"
+    }
+}
+```
+
+### AI Legends Configuration
+```ini
+ai_legends_enabled: true
+ai_legends_provider: "azure_openai"
+ai_legends_model: "gpt-4o"
+ai_legends_power_advantage: 8
+```
+
+### Beggar Configuration
+```ini
+ai_beggar_enabled: true
+ai_beggar_provider: "azure_openai"
+ai_beggar_model: "gpt-4o"
+ai_beggar_cities: ["prontera", "geffen", "payon", "morocc", "alberta"]
+```
+
+### Mayor Configuration
+```ini
+ai_mayor_enabled: true
+ai_mayor_provider: "azure_openai"
+ai_mayor_model: "gpt-4o"
+ai_mayor_analysis_frequency: "weekly"
+```
+
+### Network Monitor Settings
+```ini
+network_monitor: {
+    enabled: true
+    update_interval: 60
+    cleanup_interval: 300
+}
+```
+
+### Security Settings
+```ini
+security: {
+    ddos_protection: {
+        enabled: true
+        packet_rate: 1000
+        connection_rate: 100
+    }
+}
+```
+
+### P2P Data Sync Configuration
+```ini
+p2p_data_sync: {
+    enabled: true
+    redis_enabled: false
+    postgresql_enabled: false
+    sync_interval: 300
+}
+```
+
+## 📊 Monitoring
+
+### AI System Monitoring
+- Character interactions
+- Player engagement metrics
+- Event participation
+- AI response performance
+- Memory usage statistics
+
+### Performance Metrics
+- Packet rates
+- Bandwidth usage
+- Connection counts
+- Resource utilization
+- Security events
+
+### Host Statistics
+- CPU usage
+- Memory usage
+- Network usage
+- Connected players
+- System status
+
+## 🔒 Security Features
+
+### Protection
+- SQL injection prevention
+- Memory safety
+- Thread safety
+- Resource management
+- Input validation
+
+### Monitoring
+- Security event logging
+- Resource tracking
+- Connection monitoring
+- Performance tracking
+- Alert generation
+
+## 🧪 Testing
+
+### Running Tests
+```bash
+# Full test suite
+cd build/src/test
+./network_tests
+
+# Specific tests
+./network_tests --gtest_filter=NetworkMonitorTest.*
+./network_tests --gtest_filter=SyncTest.*
+./network_tests --gtest_filter=P2PConfigParserTest.*
+```
+
+### Memory Testing
+```bash
+# Linux (Valgrind)
+valgrind --leak-check=full ./network_tests
+
+# Windows (Dr. Memory)
+drmemory.exe -light -- network_tests.exe
+```
+
+## 📚 Documentation
+
+### AI Systems
+- [AI Legends System](docs/AI_LEGENDS.md)
+- [AI Legends Profiles](docs/AI_LEGENDS_PROFILES.md)
+- [Nameless Beggar System](docs/AI_BEGGAR.md)
+- [Mayor Agent System](docs/AI_MAYOR.md)
+- [AI Development Roadmap](docs/AI_DEVELOPMENT_ROADMAP.md)
+- [AI Agents Overview](docs/AI_AGENTS.md)
+- [AI Implementation Summary](docs/AI_IMPLEMENTATION_SUMMARY.md)
+- [AI Agents Optimization](docs/AI_AGENTS_OPTIMIZATION.md)
+
+### Network & Security
+- [Security Review](docs/SECURITY_REVIEW.md)
+- [P2P Hosting Guide](docs/P2P_HOSTING.md)
+- [Future Features](docs/FUTURE_FEATURES.md)
+- [Feature Details](docs/FEATURE_DETAILS.md)
+
+## 🔜 Upcoming Features
+
+### AI Systems
+- Cross-Class Synthesis system
+- Dynamic World Evolution
+- Legend Bloodlines system
+- Economic Ecosystem
+- Social Dynamics system
+- Advanced Combat Mechanics
+- Personal Housing system
+- Time Manipulation system
+- Guild Evolution system
+- Dimensional Warfare
+
+### Security
+- TLS implementation
+- Advanced DDoS protection
+- Enhanced P2P host validation
+- Certificate management
+- Packet encryption
+
+### Monitoring
+- Real-time dashboard
+- Advanced analytics
+- Predictive monitoring
+- Custom metrics
+
+### Performance
+- Advanced caching
+- Load balancing
+- Dynamic scaling
+- Resource optimization
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Run tests (`./test_build.sh` or `test_build.bat`)
+4. Commit changes (`git commit -m 'Add amazing feature'`)
+5. Push to branch (`git push origin feature/amazing-feature`)
+6. Open a Pull Request
+
+## 📄 License
+
+This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
