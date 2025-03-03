@@ -1,70 +1,43 @@
-# rAthena AI World
+# rAthena P2P Network
 
-## Overview
-Advanced AI-driven gameplay enhancement and P2P network security system for rAthena, providing intelligent NPCs, dynamic world evolution, and robust protection.
+Enhanced P2P network system for rAthena, providing distributed hosting capabilities with robust security features.
 
 ## ✨ Features
 
-### AI Agents
+### P2P Network Infrastructure
+- Distributed map hosting
+- Host node management
+- Load balancing
+- Resource optimization
+- Network latency reduction
+- Performance monitoring
 
-#### Mayor AI Agent
-- Weekly server statistics analysis
-- Dynamic event creation based on player behavior
-- Player retention and acquisition strategies
-- Comprehensive reporting on server health and trends
-- Tailored events for different player segments
-- Event creation system with various types and difficulties
-- Integration with other AI systems for coordinated experiences
-
-#### AI Integration
-- Support for Azure OpenAI, OpenAI, and DeepSeek V3 providers
-- LangChain integration for context memory management
-- Dynamic configuration systems for each AI character
-- Fallback mechanisms for offline operation
-
-### P2P and Network Security
-- Thread-safe packet monitoring
-- Resource usage tracking
-- Performance metrics collection
-- Host statistics monitoring
-- P2P hosting system with host scoring
-- Host eligibility validation
-- Real-time gaming experience optimization
-- Data synchronization with Redis/PostgreSQL support
+### Network Security
+- Host scoring and validation
 - SQL injection prevention
 - Memory safety improvements
-- Basic DDoS protection
-- Cross-platform security implementation
-- WARP P2P Security System integration
+- DDoS protection
+- Thread safety verification
+- WARP P2P Security integration
+- Cross-platform security
 
 ### Monitoring System
 - Real-time connection tracking
 - Resource usage monitoring
+- Host status tracking
 - Performance metrics collection
 - Security event logging
-- Host status tracking
-- Advanced P2P network analytics
-
-### Development Tools
-- Cross-platform build system
-- Comprehensive test suite
-- Memory leak detection
-- Thread safety verification
-- Performance testing
-- Build verification scripts
-- Client update utilities
 
 ## 🚀 Getting Started
 
 ### Prerequisites
 - CMake 3.15+
-- C++17 compliant compiler
+- C++17 compiler
 - MySQL 5.7+
 - libconfig
 - nlohmann-json
-- Redis (optional, for P2P data sync)
-- PostgreSQL (optional, for P2P data sync)
-- Azure OpenAI, OpenAI, or DeepSeek API key (for AI features)
+- Redis (optional)
+- PostgreSQL (optional)
 
 ### Building
 
@@ -92,49 +65,12 @@ cmake --build . --config Release
 
 ## 🔧 Configuration
 
-### AI Providers Configuration
+### P2P Host Settings
 ```ini
-ai_providers: {
-    azure_openai: {
-        enabled: true
-        api_key: "your-api-key"
-        endpoint: "your-endpoint"
-        deployment: "gpt-4o"
-        api_version: "2023-05-15"
-    }
-    openai: {
-        enabled: true
-        api_key: "your-api-key"
-        model: "gpt-4o"
-    }
-    deepseek: {
-        enabled: true
-        api_key: "your-api-key"
-        model: "deepseek-v3"
-    }
-}
-```
-
-### Mayor Configuration
-```ini
-ai_mayor_enabled: true
-ai_mayor_provider: "azure_openai"
-ai_mayor_model: "gpt-4o"
-ai_mayor_analysis_frequency: "weekly"
-```
-
-### Network Monitor Settings
-```ini
-network_monitor: {
+p2p_hosting: {
     enabled: true
-    update_interval: 60
-    cleanup_interval: 300
-}
-```
-
-### Security Settings
-```ini
-security: {
+    min_score: 80
+    sync_interval: 300
     ddos_protection: {
         enabled: true
         packet_rate: 1000
@@ -143,105 +79,34 @@ security: {
 }
 ```
 
-### P2P Data Sync Configuration
+### Security Settings
 ```ini
-p2p_data_sync: {
-    enabled: true
-    redis_enabled: false
-    postgresql_enabled: false
-    sync_interval: 300
+security: {
+    sql_injection_prevention: true
+    memory_checks: true
+    packet_validation: true
+    thread_safety: true
 }
 ```
 
-## 📊 Monitoring
+## 📚 Documentation
+- [Database Structure](doc/database_structure.md)
+- [P2P Hosting Implementation](doc/p2p_hosting_implementation.md)
+- [P2P Security](doc/p2p_security.md)
+- [System Overview](doc/p2p_system_overview.md)
+- [Monitoring Setup](doc/monitoring_setup.md)
 
-### AI System Monitoring
-- Character interactions
-- Player engagement metrics
-- Event participation
-- AI response performance
-- Memory usage statistics
-
-### Performance Metrics
-- Packet rates
-- Bandwidth usage
-- Connection counts
-- Resource utilization
-- Security events
-
-### Host Statistics
-- CPU usage
-- Memory usage
-- Network usage
-- Connected players
-- System status
-
-## 🔒 Security Features
-
-### Protection
-- SQL injection prevention
-- Memory safety
-- Thread safety
-- Resource management
-- Input validation
-
-### Monitoring
-- Security event logging
-- Resource tracking
-- Connection monitoring
-- Performance tracking
-- Alert generation
-
-## 🧪 Testing
-
-### Running Tests
-```bash
-# Full test suite
-cd build/src/test
-./network_tests
-
-# Specific tests
-./network_tests --gtest_filter=NetworkMonitorTest.*
-./network_tests --gtest_filter=SyncTest.*
-./network_tests --gtest_filter=P2PConfigParserTest.*
-```
-
-### Memory Testing
-```bash
-# Linux (Valgrind)
-valgrind --leak-check=full ./network_tests
-
-# Windows (Dr. Memory)
-drmemory.exe -light -- network_tests.exe
-```
-
-## 🔜 Upcoming Features
-
-### Security
-- TLS implementation
-- Advanced DDoS protection
-- Enhanced P2P host validation
-- Certificate management
-- Packet encryption
-
-### Monitoring
-- Real-time dashboard using [FluxCP-AI-world-p2p-hosting](https://github.com/iskandarsulaili/FluxCP-AI-world-p2p-hosting)
-
-### Performance
-- Advanced caching
-- Load balancing
-- Dynamic scaling
-- Resource optimization
+## 🛠️ Related Projects
+- [FluxCP P2P Hosting](https://github.com/iskandarsulaili/FluxCP-AI-world-p2p-hosting) - Control panel with P2P hosting management
+- [WARP P2P Client](https://github.com/Neo-Mind/WARP) - Client-side P2P implementation
 
 ## 🤝 Contributing
-
 1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+2. Create feature branch (`git checkout -b feature/amazing-feature`)
 3. Run tests (`./test_build.sh` or `test_build.bat`)
 4. Commit changes (`git commit -m 'Add amazing feature'`)
 5. Push to branch (`git push origin feature/amazing-feature`)
 6. Open a Pull Request
 
 ## 📄 License
-
-This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
+GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
