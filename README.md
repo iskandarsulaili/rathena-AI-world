@@ -19,6 +19,17 @@ A comprehensive AI system for rAthena that enhances gameplay through intelligent
 
 ### Core Systems
 - Multi-model AI support (Azure OpenAI, OpenAI GPT-4, DeepSeek)
+- P2P Hosting System
+  * Distributed map hosting via P2P network
+  * Coordinator server for centralized management
+  * Dynamic map distribution
+  * Secure database synchronization
+  * Real-time monitoring system
+  * FluxCP-integrated admin panel
+  * WARP client patches for P2P support
+  * Advanced security measures
+  * Automated failover to VPS
+  * Performance optimization tools
 - Advanced memory management with short-term and long-term memory
 - Real-time monitoring and performance optimization
 - Comprehensive configuration system
@@ -32,14 +43,18 @@ A comprehensive AI system for rAthena that enhances gameplay through intelligent
 - 4 CPU cores minimum (8+ recommended)
 - 20GB free disk space
 - Internet connection for AI API access
+- Port 5121 and 5122 open for P2P networking
 
 ### Software Dependencies
 - CMake 3.12+
 - GCC 8+ or Clang 7+
 - Git
 - libcurl4-openssl-dev
+- libmysqlclient-dev
 - libssl-dev
 - rapidjson-dev
+- libpcre3-dev
+- zlib1g-dev
 
 ### AI API Requirements
 At least one of:
@@ -55,35 +70,68 @@ At least one of:
    cd rathena-AI-world
    ```
 
-2. **Configure AI System**
+2. **Configure Systems**
    ```bash
+   # Configure AI system
    cp conf/ai_agents.conf.example conf/ai_agents.conf
-   # Edit conf/ai_agents.conf with your API keys and preferences
+   
+   # Configure P2P system
+   cp conf/p2p/p2p.conf.example conf/p2p/p2p.conf
+   cp conf/p2p/host_node.conf.example conf/p2p/host_node.conf
+   
+   # Edit configuration files with your settings
    ```
 
 3. **Build and Install**
    ```bash
+   # Install P2P dependencies
+   sudo apt-get install -y \
+       libssl-dev \
+       libmysqlclient-dev \
+       libpcre3-dev \
+       zlib1g-dev
+
    # Using build script (recommended)
    chmod +x build.sh
-   ./build.sh
+   ./build.sh --with-p2p
 
    # Or using make
-   make
+   make p2p=yes
    make install
    ```
 
-4. **Verify Installation**
+4. **Setup P2P Services**
+   ```bash
+   # Setup P2P coordinator service
+   sudo cp tools/services/p2p-coordinator.service /etc/systemd/system/
+   sudo systemctl daemon-reload
+   sudo systemctl enable p2p-coordinator
+   sudo systemctl start p2p-coordinator
+
+   # Setup monitoring service
+   sudo cp tools/services/p2p-monitor.service /etc/systemd/system/
+   sudo systemctl enable p2p-monitor
+   sudo systemctl start p2p-monitor
+   ```
+
+5. **Verify Installation**
    ```bash
    # Check AI system status
    tools/ai_status.sh
 
+   # Check P2P system status
+   systemctl status p2p-coordinator
+   
    # Monitor AI system
    tools/ai_monitor.sh
+
+   # Monitor P2P network
+   http://your-server/p2p/dashboard
    ```
 
 ## Configuration
 
-### 1. Basic Configuration
+### 1. AI System Configuration
 Edit `conf/ai_agents.conf`:
 ```ini
 ai_system: {
@@ -92,14 +140,41 @@ ai_system: {
 }
 ```
 
-### 2. Enable/Disable Agents
+### 2. Enable/Disable AI Agents
 ```ini
 adaptive_balance: { enabled: true }
 dynamic_reward: { enabled: true }
 // ... configure other agents
 ```
 
-### 3. AI Model Configuration
+### 3. P2P System Configuration
+Edit `conf/p2p/p2p.conf`:
+```yaml
+coordinator:
+  port: 5121
+  db_proxy_port: 5122
+  max_connections: 1000
+
+security:
+  encryption_enabled: true
+  key_rotation_interval: 3600
+```
+
+### 4. P2P Host Configuration
+Edit `conf/p2p/host_node.conf`:
+```yaml
+node:
+  max_maps: 5
+  max_players: 100
+  update_interval: 50
+
+resources:
+  cpu_limit: 80
+  memory_limit: 85
+  network_limit: 100
+```
+
+### 5. AI Model Configuration
 ```ini
 azure_openai: {
     api_key: "your-api-key"
@@ -109,10 +184,13 @@ azure_openai: {
 
 ## Usage
 
-### Start the AI System
+### Starting the Systems
 ```bash
 # Start with default settings
 ./map-server --ai-system
+
+# Start with P2P support
+./map-server --with-p2p
 
 # Start with specific configuration
 ./map-server --ai-config=/path/to/config
@@ -120,22 +198,34 @@ azure_openai: {
 
 ### Monitor and Manage
 ```bash
-# View system status
+# View AI system status
 tools/ai_status.sh
 
-# Monitor performance
+# Monitor AI performance
 tools/ai_monitor.sh
 
-# Test specific agent
+# Test specific AI agent
 tools/test_agent.sh --agent=adaptive_balance
+
+# P2P Management
+p2p-control --list-hosts
+p2p-control --map-status
+p2p-control --performance
+p2p-control --security-audit
 ```
 
 ### In-Game Commands
 ```
+# AI Commands
 @ai_status             - Show AI system status
 @ai_agent <command>    - Control AI agents
 @ai_config <setting>   - Adjust configuration
 @ai_metrics           - View performance metrics
+
+# P2P Commands
+@p2p_status          - Show P2P network status
+@p2p_host <command>  - Manage P2P hosting
+@p2p_metrics        - View P2P performance
 ```
 
 ## Development
@@ -173,6 +263,10 @@ make docs
 - [Quick Start Guide](doc/QUICKSTART.md)
 - [Configuration Guide](doc/configuration.md)
 - [AI Agent Documentation](doc/agents/README.md)
+- [P2P System Overview](doc/p2p_system_overview.md)
+- [P2P Security Guide](doc/p2p_security.md)
+- [P2P Hosting Implementation](doc/p2p_hosting_implementation.md)
+- [P2P Monitoring Guide](doc/p2p_monitoring.md)
 - [API Reference](doc/api/README.md)
 - [Development Guide](doc/development.md)
 - [Troubleshooting](doc/troubleshooting.md)
@@ -203,6 +297,7 @@ This project is licensed under the GNU General Public License v3.0 - see the [LI
 - rAthena Team and Community
 - OpenAI and Azure OpenAI Teams
 - DeepSeek Team
+- WARP P2P Client Team
 - All contributors and testers
 
 ## Project Status
