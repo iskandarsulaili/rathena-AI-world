@@ -1,0 +1,13 @@
+prefix=@CMAKE_INSTALL_PREFIX@
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: rAthena AI System
+Description: Intelligent agent system for rAthena MMORPG server
+Version: @PROJECT_VERSION@
+Requires: nlohmann_json >= 3.9.0, openssl >= 1.1.0, libcurl >= 7.58.0
+Conflicts:
+Libs: -L${libdir} -lai_system -lai_context -lai_model -lai_memory
+Libs.private: -lssl -lcrypto -lcurl
+Cflags: -I${includedir}/ai -I${includedir}/ai/context -I${includedir}/ai/model -I${includedir}/ai/memory -I${includedir}/ai/context/langchain
