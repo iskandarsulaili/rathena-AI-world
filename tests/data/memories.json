@@ -1,0 +1,169 @@
+{
+    "test_memories": {
+        "short_term": [
+            {
+                "id": 1,
+                "agent_id": "balance_agent",
+                "category": "class_balance",
+                "data": {
+                    "job_id": 1,
+                    "timestamp": 1709596800,
+                    "metrics": {
+                        "win_rate": 0.65,
+                        "usage_rate": 0.4,
+                        "performance_score": 1.2
+                    }
+                },
+                "metadata": {
+                    "type": "SHORT_TERM",
+                    "priority": "HIGH",
+                    "creation_time": 1709596800,
+                    "expiration_time": 1709683200,
+                    "access_count": 5,
+                    "importance_score": 0.8
+                }
+            }
+        ],
+        "long_term": [
+            {
+                "id": 1001,
+                "agent_id": "monster_agent",
+                "category": "behavior_pattern",
+                "data": {
+                    "monster_id": 1001,
+                    "pattern_history": [
+                        {
+                            "timestamp": 1709510400,
+                            "behavior": "aggressive",
+                            "success_rate": 0.75
+                        },
+                        {
+                            "timestamp": 1709424000,
+                            "behavior": "defensive",
+                            "success_rate": 0.60
+                        }
+                    ]
+                },
+                "metadata": {
+                    "type": "LONG_TERM",
+                    "priority": "MEDIUM",
+                    "creation_time": 1709424000,
+                    "expiration_time": 1717200000,
+                    "access_count": 20,
+                    "importance_score": 0.9
+                }
+            }
+        ],
+        "contextual": [
+            {
+                "context_id": "dungeon_1",
+                "memories": [
+                    {
+                        "id": 2001,
+                        "agent_id": "quest_agent",
+                        "category": "environment_state",
+                        "data": {
+                            "map_id": 123,
+                            "difficulty": "hard",
+                            "player_success_rate": 0.45,
+                            "average_completion_time": 3600
+                        },
+                        "metadata": {
+                            "type": "CONTEXTUAL",
+                            "priority": "MEDIUM",
+                            "creation_time": 1709593200,
+                            "expiration_time": 1709679600,
+                            "access_count": 8,
+                            "importance_score": 0.7
+                        }
+                    }
+                ]
+            }
+        ]
+    },
+    "test_scenarios": {
+        "memory_consolidation": {
+            "initial_state": {
+                "short_term_count": 100,
+                "long_term_count": 1000,
+                "contextual_count": 50
+            },
+            "triggers": [
+                {
+                    "type": "time_based",
+                    "condition": "24h_elapsed",
+                    "expected_actions": ["consolidate", "cleanup"]
+                },
+                {
+                    "type": "capacity_based",
+                    "condition": "short_term_full",
+                    "expected_actions": ["consolidate", "prune"]
+                }
+            ]
+        },
+        "memory_pruning": {
+            "candidates": [
+                {
+                    "id": 3001,
+                    "importance_score": 0.2,
+                    "last_access": 1709510400,
+                    "expected_action": "remove"
+                },
+                {
+                    "id": 3002,
+                    "importance_score": 0.9,
+                    "last_access": 1709510400,
+                    "expected_action": "retain"
+                }
+            ]
+        },
+        "memory_search": {
+            "queries": [
+                {
+                    "category": "class_balance",
+                    "time_range": {
+                        "start": 1709424000,
+                        "end": 1709596800
+                    },
+                    "expected_count": 5
+                },
+                {
+                    "category": "behavior_pattern",
+                    "agent_id": "monster_agent",
+                    "expected_count": 10
+                }
+            ]
+        }
+    },
+    "memory_metrics": {
+        "retention_rates": {
+            "short_term": 0.8,
+            "long_term": 0.95,
+            "contextual": 0.7
+        },
+        "access_patterns": {
+            "high_frequency": ["class_balance", "behavior_pattern"],
+            "medium_frequency": ["quest_state", "reward_history"],
+            "low_frequency": ["system_metrics", "debug_logs"]
+        },
+        "importance_thresholds": {
+            "consolidation": 0.6,
+            "retention": 0.4,
+            "priority_boost": 0.8
+        }
+    },
+    "metadata": {
+        "version": "1.0",
+        "generated_at": 1709596800,
+        "total_memories": {
+            "short_term": 100,
+            "long_term": 1000,
+            "contextual": 50
+        },
+        "memory_stats": {
+            "average_importance": 0.65,
+            "average_retention": 0.85,
+            "consolidation_rate": 0.2
+        }
+    }
+}

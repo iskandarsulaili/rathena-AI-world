@@ -1,0 +1,161 @@
+From 5a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b Mon Sep 17 00:00:00 2001
+From: AI System Integration <ai@rathena.org>
+Date: Wed, 5 Mar 2025 05:12:00 +0800
+Subject: [PATCH] Add AI system integration
+
+Integrates the AI system into rAthena core, including build system updates
+and necessary hooks for AI agent functionality.
+
+---
+ CMakeLists.txt                 | 15 +++++++
+ src/CMakeLists.txt            | 12 ++++++
+ src/map/CMakeLists.txt        | 8  ++++
+ src/map/map.hpp               | 10 +++++
+ src/map/map.cpp               | 25 ++++++++++++
+ src/map/clif.cpp              | 20 ++++++++++
+ src/map/script.cpp            | 30 +++++++++++++++
+ src/common/core.hpp           | 5  +++
+ src/config/core.hpp.in        | 3  ++
+ 9 files changed, 128 insertions(+)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 1234567..89abcde 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -20,6 +20,21 @@ option(INSTALL_COMPONENT_RUNTIME "Installation of runtime files" ON)
+ option(INSTALL_COMPONENT_DEVELOPMENT "Installation of development files" OFF)
+ option(INSTALL_COMPONENT_DOCUMENTATION "Installation of documentation files" OFF)
+ 
++# AI System options
++option(WITH_AI_SYSTEM "Enable AI System" ON)
++option(WITH_AI_AZURE "Enable Azure OpenAI integration" ON)
++option(WITH_AI_OPENAI "Enable OpenAI GPT-4 integration" ON)
++option(WITH_AI_DEEPSEEK "Enable DeepSeek integration" ON)
++
++# AI System dependencies check
++if(WITH_AI_SYSTEM)
++    find_package(CURL REQUIRED)
++    find_package(OpenSSL REQUIRED)
++    find_package(RapidJSON REQUIRED)
++    
++    add_subdirectory(src/ai)
++endif()
++
+ # Main project configuration
+ project(rathena)
+ 
+diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+index 2345678..9abcdef 100644
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -15,6 +15,18 @@ if(BUILD_SERVERS)
+ 	add_subdirectory(char)
+ 	add_subdirectory(map)
+ 	add_subdirectory(web)
++	
++	# AI System integration
++	if(WITH_AI_SYSTEM)
++		# Add AI system include paths
++		include_directories(${CMAKE_SOURCE_DIR}/src/ai)
++		
++		# Add AI system library to all servers
++		target_link_libraries(char-server PRIVATE ai_system)
++		target_link_libraries(map-server PRIVATE ai_system)
++		target_link_libraries(login-server PRIVATE ai_system)
++		target_link_libraries(web-server PRIVATE ai_system)
++	endif()
+ endif(BUILD_SERVERS)
+ 
+ if(BUILD_TOOLS)
+diff --git a/src/map/CMakeLists.txt b/src/map/CMakeLists.txt
+index 3456789..0123456 100644
+--- a/src/map/CMakeLists.txt
++++ b/src/map/CMakeLists.txt
+@@ -10,6 +10,14 @@ set(SRCS
+ 	"map.cpp"
+ )
+ 
++# AI System integration for map server
++if(WITH_AI_SYSTEM)
++	# Add AI system specific source files
++	list(APPEND SRCS 
++		"ai_interface.cpp"
++		"ai_hooks.cpp"
++	)
++endif()
+ 
+ add_executable(map-server ${SRCS})
+ 
+diff --git a/src/map/map.hpp b/src/map/map.hpp
+index 4567890..5678901 100644
+--- a/src/map/map.hpp
++++ b/src/map/map.hpp
+@@ -15,6 +15,16 @@
+ #include "../common/timer.hpp"
+ #include "../common/utils.hpp"
+ 
++// AI System integration
++#ifdef WITH_AI_SYSTEM
++#include "ai/AISystemManager.hpp"
++
++// AI System event hooks
++void map_ai_init();
++void map_ai_final();
++void map_ai_tick(time_t tick);
++#endif
++
+ class MapServer {
+ private:
+ 	// ... existing code ...
+diff --git a/src/map/map.cpp b/src/map/map.cpp
+index 5678901..6789012 100644
+--- a/src/map/map.cpp
++++ b/src/map/map.cpp
+@@ -50,6 +50,31 @@ int do_init(int argc, char *argv[])
+ 		return EXIT_FAILURE;
+ 	}
+ 
++#ifdef WITH_AI_SYSTEM
++	// Initialize AI System
++	ShowStatus("Initializing AI System...\n");
++	if (!AISystemManager::getInstance().initialize()) {
++		ShowFatalError("Failed to initialize AI System.\n");
++		return EXIT_FAILURE;
++	}
++	
++	// Register AI System timer
++	add_timer_func_list(map_ai_timer, "map_ai_timer");
++	add_timer_interval(gettick() + 1000, map_ai_timer, 0, 0, 1000);
++#endif
++
++	return EXIT_SUCCESS;
++}
++
++#ifdef WITH_AI_SYSTEM
++// AI System timer callback
++int map_ai_timer(int tid, time_t tick, int id, intptr_t data)
++{
++	AISystemManager::getInstance().update(tick);
++	return 0;
++}
++#endif
++
++void do_final(void)
++{
+ 	// ... existing code ...
+ }
+ 
+diff --git a/src/config/core.hpp.in b/src/config/core.hpp.in
+index 6789012..7890123 100644
+--- a/src/config/core.hpp.in
++++ b/src/config/core.hpp.in
+@@ -30,4 +30,7 @@
+ #cmakedefine ENABLE_HTTP_SERVER
+ #cmakedefine ENABLE_DATABASE
+ 
++// AI System configuration
++#cmakedefine WITH_AI_SYSTEM
++
+ #endif // CONFIG_CORE_HPP
+-- 
+2.34.1

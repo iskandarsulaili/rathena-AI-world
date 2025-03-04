@@ -1,0 +1,201 @@
+{
+    "test_responses": {
+        "balance_agent": {
+            "class_analysis": {
+                "responses": [
+                    {
+                        "input": {
+                            "job_id": "1",
+                            "win_rate": "0.65",
+                            "usage_rate": "0.4"
+                        },
+                        "output": {
+                            "needs_adjustment": true,
+                            "adjustment_factor": 0.85,
+                            "adjustment_type": "nerf",
+                            "recommendations": [
+                                {
+                                    "attribute": "base_damage",
+                                    "change": -0.15,
+                                    "reason": "Win rate significantly above target"
+                                },
+                                {
+                                    "attribute": "skill_cooldown",
+                                    "change": 0.2,
+                                    "reason": "High usage rate indicates strong skill efficiency"
+                                }
+                            ]
+                        }
+                    }
+                ]
+            },
+            "skill_balance": {
+                "responses": [
+                    {
+                        "input": {
+                            "skill_id": "100",
+                            "success_rate": "0.95",
+                            "damage_contrib": "0.5"
+                        },
+                        "output": {
+                            "is_valid": true,
+                            "recommendations": [
+                                {
+                                    "type": "damage_reduction",
+                                    "value": 0.2,
+                                    "priority": "high"
+                                },
+                                {
+                                    "type": "cooldown_increase",
+                                    "value": 1.5,
+                                    "priority": "medium"
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        },
+        "reward_agent": {
+            "reward_generation": {
+                "responses": [
+                    {
+                        "input": {
+                            "play_time": "100",
+                            "achievements": "30"
+                        },
+                        "output": {
+                            "reward_type": "progressive",
+                            "items": [
+                                {
+                                    "id": 501,
+                                    "quantity": 5,
+                                    "rarity": "rare",
+                                    "dopamine_impact": 0.7
+                                },
+                                {
+                                    "id": 602,
+                                    "quantity": 1,
+                                    "rarity": "unique",
+                                    "dopamine_impact": 0.9
+                                }
+                            ],
+                            "exp_bonus": 1.5,
+                            "special_effects": ["visual_effect", "sound_effect"]
+                        }
+                    }
+                ]
+            }
+        },
+        "monster_agent": {
+            "behavior_analysis": {
+                "responses": [
+                    {
+                        "input": {
+                            "monster_id": "1001",
+                            "difficulty": "hard",
+                            "environment": "dungeon"
+                        },
+                        "output": {
+                            "behavior_pattern": "aggressive",
+                            "skill_usage": [
+                                {
+                                    "skill_id": 1001,
+                                    "usage_condition": "hp < 50%",
+                                    "target_selection": "highest_threat"
+                                },
+                                {
+                                    "skill_id": 1002,
+                                    "usage_condition": "allies_nearby > 2",
+                                    "target_selection": "group_aoe"
+                                }
+                            ],
+                            "movement_pattern": "dynamic",
+                            "group_coordination": true
+                        }
+                    }
+                ]
+            }
+        },
+        "social_agent": {
+            "community_analysis": {
+                "responses": [
+                    {
+                        "input": {
+                            "pattern_id": "guild",
+                            "activity": "high"
+                        },
+                        "output": {
+                            "event_recommendations": [
+                                {
+                                    "type": "guild_war",
+                                    "timing": "weekend_prime",
+                                    "reward_scale": 1.5
+                                },
+                                {
+                                    "type": "cooperative_raid",
+                                    "timing": "weekday_evening",
+                                    "reward_scale": 1.2
+                                }
+                            ],
+                            "social_metrics": {
+                                "engagement_rate": 0.85,
+                                "retention_impact": 0.7,
+                                "community_health": 0.9
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        "quest_agent": {
+            "quest_generation": {
+                "responses": [
+                    {
+                        "input": {
+                            "level": "60",
+                            "playstyle": "moderate"
+                        },
+                        "output": {
+                            "quest_type": "progressive",
+                            "stages": [
+                                {
+                                    "objective": "defeat_boss",
+                                    "difficulty": "medium",
+                                    "rewards": {
+                                        "exp": 50000,
+                                        "items": [{"id": 701, "quantity": 1}]
+                                    }
+                                },
+                                {
+                                    "objective": "collect_items",
+                                    "difficulty": "medium",
+                                    "rewards": {
+                                        "exp": 30000,
+                                        "items": [{"id": 702, "quantity": 5}]
+                                    }
+                                }
+                            ],
+                            "time_estimate": "2h",
+                            "group_size": {"min": 1, "max": 3}
+                        }
+                    }
+                ]
+            }
+        }
+    },
+    "response_metadata": {
+        "version": "1.0",
+        "model_info": {
+            "name": "azure_openai",
+            "version": "gpt-4",
+            "temperature": 0.7
+        },
+        "generation_params": {
+            "max_tokens": 2000,
+            "top_p": 0.95,
+            "frequency_penalty": 0.0,
+            "presence_penalty": 0.0
+        }
+    }
+}

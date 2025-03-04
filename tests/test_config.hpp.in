@@ -1,0 +1,143 @@
+#ifndef TEST_CONFIG_HPP
+#define TEST_CONFIG_HPP
+
+// Test environment configuration
+#define TEST_DATA_DIR "@TEST_DATA_DIR@"
+#define TEST_LOG_DIR "@CMAKE_BINARY_DIR@/logs/tests"
+#define TEST_RESULTS_DIR "@CMAKE_BINARY_DIR@/test_results"
+
+// Test timeouts (in milliseconds)
+#define TEST_TIMEOUT_SHORT 1000
+#define TEST_TIMEOUT_MEDIUM 5000
+#define TEST_TIMEOUT_LONG 30000
+
+// Test server configuration
+#define TEST_SERVER_HOST "localhost"
+#define TEST_SERVER_PORT 5121
+#define TEST_SERVER_TIMEOUT 10000
+
+// AI Model test configuration
+#define TEST_MODEL_MAX_TOKENS 2000
+#define TEST_MODEL_TEMPERATURE 0.7f
+#define TEST_MODEL_REQUEST_TIMEOUT 30000
+
+// Memory system test configuration
+#define TEST_MEMORY_SHORT_TERM_CAPACITY 1000
+#define TEST_MEMORY_LONG_TERM_CAPACITY 10000
+#define TEST_MEMORY_SHORT_TERM_RETENTION 86400    // 1 day in seconds
+#define TEST_MEMORY_LONG_TERM_RETENTION 7776000   // 90 days in seconds
+
+// Performance test configuration
+#define TEST_PERF_NUM_ITERATIONS 1000
+#define TEST_PERF_CONCURRENT_REQUESTS 100
+#define TEST_PERF_MEMORY_ENTRIES 10000
+#define TEST_PERF_MAX_RESPONSE_TIME 500  // milliseconds
+
+// Test data paths
+#define TEST_PROMPT_FILE TEST_DATA_DIR "/prompts.json"
+#define TEST_RESPONSE_FILE TEST_DATA_DIR "/responses.json"
+#define TEST_MEMORY_FILE TEST_DATA_DIR "/memories.json"
+
+// Mock API configuration
+#define MOCK_API_PORT 5122
+#define MOCK_API_RESPONSE_TIME 100  // milliseconds
+#define MOCK_API_ERROR_RATE 0.05f   // 5% error rate
+
+// Test agent configuration
+#define TEST_AGENT_UPDATE_INTERVAL 300  // seconds
+#define TEST_AGENT_BATCH_SIZE 32
+#define TEST_AGENT_CACHE_DURATION 300   // seconds
+
+// Test scenario configuration
+struct TestScenario {
+    const char* name;
+    const char* description;
+    int timeout;
+    bool requires_network;
+    bool requires_database;
+};
+
+// Available test scenarios
+#define TEST_SCENARIOS { \
+    {"basic", "Basic functionality tests", TEST_TIMEOUT_SHORT, false, false}, \
+    {"network", "Network interaction tests", TEST_TIMEOUT_MEDIUM, true, false}, \
+    {"database", "Database operation tests", TEST_TIMEOUT_MEDIUM, false, true}, \
+    {"integration", "Full integration tests", TEST_TIMEOUT_LONG, true, true}, \
+    {"performance", "Performance benchmark tests", TEST_TIMEOUT_LONG, true, true}, \
+    {nullptr, nullptr, 0, false, false} \
+}
+
+// Test data templates
+#define TEST_PROMPT_TEMPLATE R"(
+{
+    "agent_id": "%s",
+    "context": "%s",
+    "parameters": {
+        "max_tokens": %d,
+        "temperature": %.2f
+    }
+}
+)"
+
+#define TEST_MEMORY_TEMPLATE R"(
+{
+    "agent_id": "%s",
+    "category": "%s",
+    "data": "%s",
+    "metadata": {
+        "type": "%s",
+        "priority": "%s",
+        "creation_time": %ld
+    }
+}
+)"
+
+// Test utility macros
+#define TEST_REQUIRES_NETWORK(test_case) \
+    if (!test_network_available()) { \
+        SKIP("Test requires network connectivity"); \
+    }
+
+#define TEST_REQUIRES_DATABASE(test_case) \
+    if (!test_database_available()) { \
+        SKIP("Test requires database connectivity"); \
+    }
+
+#define TEST_WITH_TIMEOUT(timeout_ms) \
+    test_set_timeout(timeout_ms)
+
+// Version information
+#define TEST_FRAMEWORK_VERSION "@PROJECT_VERSION@"
+#define TEST_FRAMEWORK_BUILD "@CMAKE_BUILD_TYPE@"
+#define TEST_FRAMEWORK_COMPILER "@CMAKE_CXX_COMPILER_ID@ @CMAKE_CXX_COMPILER_VERSION@"
+
+// Platform-specific configurations
+#ifdef _WIN32
+    #define TEST_PATH_SEPARATOR "\\"
+    #define TEST_LIBRARY_EXTENSION ".dll"
+#else
+    #define TEST_PATH_SEPARATOR "/"
+    #define TEST_LIBRARY_EXTENSION ".so"
+#endif
+
+// Test categories
+#define TEST_CATEGORY_CORE "[core]"
+#define TEST_CATEGORY_AGENTS "[agents]"
+#define TEST_CATEGORY_MEMORY "[memory]"
+#define TEST_CATEGORY_MODEL "[model]"
+#define TEST_CATEGORY_PERFORMANCE "[performance]"
+#define TEST_CATEGORY_INTEGRATION "[integration]"
+
+// Mock data generation settings
+#define MOCK_DATA_MIN_STRING_LENGTH 10
+#define MOCK_DATA_MAX_STRING_LENGTH 1000
+#define MOCK_DATA_MIN_ARRAY_SIZE 1
+#define MOCK_DATA_MAX_ARRAY_SIZE 100
+
+// Test environment variables
+#define ENV_TEST_API_KEY "TEST_AI_API_KEY"
+#define ENV_TEST_API_ENDPOINT "TEST_AI_API_ENDPOINT"
+#define ENV_TEST_DATABASE_URL "TEST_DATABASE_URL"
+#define ENV_TEST_LOG_LEVEL "TEST_LOG_LEVEL"
+
+#endif // TEST_CONFIG_HPP
