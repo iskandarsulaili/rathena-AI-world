@@ -20,6 +20,8 @@ This document details all dependencies required for building and running rAthena
 | MySQL Client | 5.7 | `libmysqlclient-dev` | MySQL Installer | Database connectivity |
 | PCRE | 8.0 | `libpcre3-dev` | [PCRE](https://pcre.org/) | Regular expressions |
 | zlib | 1.2 | `zlib1g-dev` | [zlib](https://www.zlib.net/) | Compression |
+| libcurl | 7.0 | `libcurl4-openssl-dev` | [curl](https://curl.se/) | HTTP requests |
+| RapidJSON | 1.1.0 | `rapidjson-dev` | [RapidJSON](https://rapidjson.org/) | JSON parsing |
 
 ### Optional Build Dependencies
 
@@ -38,6 +40,8 @@ This document details all dependencies required for building and running rAthena
 | libmysqlclient | 5.7 | `libmysqlclient21` | Included with MySQL | MySQL client library |
 | libpcre | 8.0 | `libpcre3` | Bundled | Regular expressions |
 | zlib | 1.2 | `zlib1g` | Bundled | Compression |
+| libcurl | 7.0 | `libcurl4` | Bundled | HTTP requests |
+| RapidJSON | 1.1.0 | `rapidjson` | Bundled | JSON parsing |
 
 ### Optional Runtime Dependencies
 
@@ -53,12 +57,12 @@ This document details all dependencies required for building and running rAthena
 1. Install all build dependencies:
 ```bash
 sudo apt update
-sudo apt install cmake make g++ libmysqlclient-dev libpcre3-dev zlib1g-dev
+sudo apt install cmake make g++ libmysqlclient-dev libpcre3-dev zlib1g-dev libcurl4-openssl-dev rapidjson-dev
 ```
 
 2. Install runtime dependencies:
 ```bash
-sudo apt install mysql-server libmysqlclient21 libpcre3 zlib1g
+sudo apt install mysql-server libmysqlclient21 libpcre3 zlib1g libcurl4 rapidjson
 ```
 
 3. Optional development tools:

@@ -7,13 +7,15 @@
 - MySQL 5.7 or later (including MariaDB)
 - PCRE library
 - zlib development files
+- libcurl with OpenSSL support
+- RapidJSON development files
 
 ## Ubuntu/Debian Prerequisites
 
 Install required packages:
 ```bash
 sudo apt update
-sudo apt install git cmake make g++ libmysqlclient-dev libpcre3-dev zlib1g-dev
+sudo apt install git cmake make g++ libmysqlclient-dev libpcre3-dev zlib1g-dev libcurl4-openssl-dev rapidjson-dev
 ```
 
 ## Windows Prerequisites
