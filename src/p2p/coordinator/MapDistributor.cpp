@@ -3,6 +3,7 @@
 #include <iostream>
 #include <sstream>
 #include <queue>
+#include <cmath>
 
 namespace rathena {
 namespace p2p {
@@ -15,7 +16,10 @@ MapDistributor::MapDistributor(const Config& config, std::shared_ptr<HostManager
         .total_maps = 0,
         .p2p_hosted_maps = 0,
         .vps_hosted_maps = 0,
+        .main_server_fallbacks = 0,
         .pending_transfers = 0,
+        .successful_p2p_migrations = 0,
+        .failed_p2p_attempts = 0,
         .failed_transfers = 0,
         .average_load = 0.0f
     };
@@ -23,194 +27,49 @@ MapDistributor::MapDistributor(const Config& config, std::shared_ptr<HostManager
 
 MapDistributor::~MapDistributor() = default;
 
-bool MapDistributor::assign_map_to_host(map_id_t map_id, host_id_t host_id) {
-    if (!validate_map_assignment(map_id, host_id)) {
-        return false;
-    }
-    
-    // Initialize or update map state
-    MapState& state = map_states_[map_id];
-    state.current_host = host_id;
-    state.player_count = 0;
-    state.status = MapStatus::STARTING;
-    state.last_transfer = std::chrono::system_clock::now();
-    
-    // Add to host's map list
-    host_maps_[host_id].push_back(map_id);
-    
-    // Update metrics
+float MapDistributor::calculate_host_score(host_id_t host_id) {
     auto host = host_manager_->get_host_info(host_id);
-    if (host && host->is_vps) {
-        metrics_.vps_hosted_maps++;
-    } else {
-        metrics_.p2p_hosted_maps++;
+    if (!host) {
+        return 0.0f;
     }
     
-    std::cout << "Map " << map_id << " assigned to host " << host_id << std::endl;
-    return true;
-}
-
-bool MapDistributor::assign_map(map_id_t map_id, host_id_t preferred_host) {
-    std::lock_guard<std::mutex> lock(state_mutex_);
+    float score = 100.0f;
     
-    // Check if map is already assigned
-    if (map_states_.count(map_id) > 0) {
-        return false;
+    // Performance score weight (40%)
+    score *= (host->performance_score * 0.4f);
+    
+    // Current load penalty (30%)
+    float load = get_host_load(host_id);
+    if (load > config_.load_threshold) {
+        score *= (1.0f - ((load - config_.load_threshold) * 0.3f));
     }
     
-    // Try preferred host first if specified
-    if (preferred_host != 0 && can_host_map(preferred_host, map_id)) {
-        return assign_map_to_host(map_id, preferred_host);
-    }
-    
-    // Find best available host
-    host_id_t selected_host = find_best_host(map_id);
-    if (selected_host == 0) {
-        std::cerr << "No suitable host found for map " << map_id << std::endl;
-        return false;
-    }
-    
-    return assign_map_to_host(map_id, selected_host);
-}
-
-bool MapDistributor::reassign_map(map_id_t map_id) {
-    std::lock_guard<std::mutex> lock(state_mutex_);
-    
-    auto map_it = map_states_.find(map_id);
-    if (map_it == map_states_.end()) {
-        return false;
-    }
-    
-    // Get current host and exclude it from candidates
-    host_id_t current_host = map_it->second.current_host;
-    std::vector<host_id_t> excluded_hosts = {current_host};
-    
-    // Find new host
-    host_id_t new_host = find_best_host(map_id, excluded_hosts);
-    if (new_host == 0) {
-        std::cerr << "No alternative host found for map " << map_id << std::endl;
-        return false;
-    }
-    
-    // Initiate transfer
-    return initiate_map_transfer(map_id, new_host);
-}
-
-void MapDistributor::rebalance_maps() {
-    std::lock_guard<std::mutex> lock(state_mutex_);
-    
-    // Calculate optimal distribution
-    auto optimal_distribution = calculate_optimal_distribution();
-    
-    // Apply changes
-    for (const auto& [map_id, new_host] : optimal_distribution) {
-        auto current_host = get_map_host(map_id);
-        if (current_host != new_host) {
-            initiate_map_transfer(map_id, new_host);
-        }
-    }
-}
-
-std::vector<std::pair<map_id_t, host_id_t>> MapDistributor::calculate_optimal_distribution() {
-    std::vector<std::pair<map_id_t, host_id_t>> distribution;
-    
-    // Get all maps and available hosts
-    std::vector<map_id_t> maps_to_distribute;
-    for (const auto& [map_id, state] : map_states_) {
-        maps_to_distribute.push_back(map_id);
-    }
-    
-    auto eligible_hosts = host_manager_->get_eligible_hosts();
-    if (eligible_hosts.empty()) {
-        return distribution;
-    }
-    
-    // Sort maps by priority (player count, is_critical)
-    std::sort(maps_to_distribute.begin(), maps_to_distribute.end(),
-        [this](map_id_t a, map_id_t b) {
-            const auto& state_a = map_states_[a];
-            const auto& state_b = map_states_[b];
-            if (state_a.is_critical != state_b.is_critical) {
-                return state_a.is_critical;
-            }
-            return state_a.player_count > state_b.player_count;
-        });
-    
-    // Distribute maps
-    for (auto map_id : maps_to_distribute) {
-        host_id_t best_host = find_best_host(map_id);
-        if (best_host != 0) {
-            distribution.emplace_back(map_id, best_host);
-        }
-    }
-    
-    return distribution;
-}
-
-void MapDistributor::handle_host_failure(host_id_t host_id) {
-    std::lock_guard<std::mutex> lock(state_mutex_);
-    
-    // Get all maps hosted by failed host
-    auto hosted_maps = host_maps_[host_id];
-    
-    // Remove failed host from tracking
-    host_maps_.erase(host_id);
-    
-    // Reassign each map
-    for (auto map_id : hosted_maps) {
-        auto map_it = map_states_.find(map_id);
-        if (map_it != map_states_.end()) {
-            map_it->second.status = MapStatus::OFFLINE;
-            reassign_map(map_id);
-        }
-    }
-    
-    update_metrics();
-}
-
-host_id_t MapDistributor::find_best_host(map_id_t map_id, 
-                                       const std::vector<host_id_t>& excluded_hosts) {
-    // Get all eligible hosts
-    auto eligible_hosts = host_manager_->get_eligible_hosts();
-    
-    // Remove excluded hosts
-    eligible_hosts.erase(
-        std::remove_if(eligible_hosts.begin(), eligible_hosts.end(),
-            [&](host_id_t host_id) {
-                return std::find(excluded_hosts.begin(), excluded_hosts.end(), 
-                               host_id) != excluded_hosts.end();
-            }
-        ),
-        eligible_hosts.end()
-    );
-    
-    if (eligible_hosts.empty()) {
-        return 0;
-    }
-    
-    // Calculate scores for each host
-    std::vector<std::pair<host_id_t, float>> host_scores;
-    for (auto host_id : eligible_hosts) {
-        if (!can_host_map(host_id, map_id)) {
-            continue;
+    // Network quality score for P2P hosts (20%)
+    if (!host->is_vps) {
+        float network_factor = 1.0f;
+        
+        // Apply latency penalty
+        if (host->metrics.network_latency > 0) {
+            network_factor *= std::max(0.0f, 1.0f - (host->metrics.network_latency / 100.0f));
         }
         
-        float score = calculate_host_score(host_id);
-        host_scores.emplace_back(host_id, score);
+        // Apply uptime bonus (max bonus at 24 hours)
+        auto uptime = std::chrono::duration_cast<std::chrono::hours>(
+            std::chrono::system_clock::now() - host->registration_time).count();
+            
+        float uptime_hours = static_cast<float>(uptime);
+        network_factor *= (1.0f + std::min(uptime_hours, 24.0f) / 24.0f);
+        
+        score *= (network_factor * 0.2f);
     }
     
-    if (host_scores.empty()) {
-        return 0;
+    // Map count penalty (20%)
+    auto hosted_maps = get_host_maps(host_id);
+    if (hosted_maps.size() >= config_.max_maps_per_host) {
+        score *= 0.8f;
     }
     
-    // Sort by score and return best host
-    std::sort(host_scores.begin(), host_scores.end(),
-        [](const auto& a, const auto& b) {
-            return a.second > b.second;
-        }
-    );
-    
-    return host_scores[0].first;
+    return score;
 }
 
 bool MapDistributor::validate_map_assignment(map_id_t map_id, host_id_t host_id) {
@@ -236,40 +95,18 @@ bool MapDistributor::validate_map_assignment(map_id_t map_id, host_id_t host_id)
     return true;
 }
 
-bool MapDistributor::validate_host_capacity(host_id_t host_id) {
-    auto maps = get_host_maps(host_id);
-    return maps.size() < config_.max_maps_per_host;
-}
-
-float MapDistributor::calculate_host_score(host_id_t host_id) {
+bool MapDistributor::validate_p2p_eligibility(host_id_t host_id, map_id_t map_id) {
     auto host = host_manager_->get_host_info(host_id);
     if (!host) {
-        return 0.0f;
+        return false;
     }
     
-    float score = 100.0f;
-    
-    // Performance score weight (40%)
-    score *= (host->performance_score * 0.4f);
-    
-    // Current load penalty (30%)
-    float load = get_host_load(host_id);
-    if (load > config_.load_threshold) {
-        score *= (1.0f - ((load - config_.load_threshold) * 0.3f));
+    // Check if host meets P2P requirements
+    if (host->is_vps || host->performance_score < (config_.min_p2p_score / 100.0f)) {
+        return false;
     }
     
-    // Map count penalty (20%)
-    auto hosted_maps = get_host_maps(host_id);
-    if (hosted_maps.size() >= config_.max_maps_per_host) {
-        score *= 0.8f;
-    }
-    
-    // VPS preference for critical maps (10%)
-    if (host->is_vps) {
-        score *= 1.1f;
-    }
-    
-    return score;
+    return true;
 }
 
 bool MapDistributor::initiate_map_transfer(map_id_t map_id, host_id_t new_host) {
@@ -345,19 +182,6 @@ void MapDistributor::update_metrics() {
     }
     
     metrics_.average_load = loaded_hosts > 0 ? total_load / loaded_hosts : 0.0f;
-}
-
-void MapDistributor::log_distribution_metrics() {
-    std::ostringstream oss;
-    oss << "Map Distribution Metrics:\n"
-        << "Total Maps: " << metrics_.total_maps << "\n"
-        << "P2P Hosted: " << metrics_.p2p_hosted_maps << "\n"
-        << "VPS Hosted: " << metrics_.vps_hosted_maps << "\n"
-        << "Pending Transfers: " << metrics_.pending_transfers << "\n"
-        << "Failed Transfers: " << metrics_.failed_transfers << "\n"
-        << "Average Load: " << metrics_.average_load * 100.0f << "%";
-    
-    std::cout << oss.str() << std::endl;
 }
 
 } // namespace p2p
