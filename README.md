@@ -1,6 +1,6 @@
 # rAthena AI World
 
-A comprehensive AI system for rAthena that enhances gameplay through intelligent agents, dynamic content generation, and adaptive game mechanics.
+A comprehensive AI system for rAthena that enhances gameplay through intelligent agents, dynamic content generation, adaptive game mechanics, and P2P hosting capabilities. Works in conjunction with [WARP P2P Client](https://github.com/iskandarsulaili/WARP-p2p-client) and [FluxCP AI World](https://github.com/iskandarsulaili/FluxCP-AI-world-p2p-hosting) for a complete solution.
 
 ## Features
 
@@ -22,7 +22,7 @@ A comprehensive AI system for rAthena that enhances gameplay through intelligent
 - P2P Hosting System
   * Distributed map hosting via P2P network
   * Coordinator server for centralized management
-  * Dynamic map distribution
+  * Dynamic map distribution with AI optimization
   * Secure database synchronization
   * Real-time monitoring system
   * FluxCP-integrated admin panel
@@ -34,6 +34,22 @@ A comprehensive AI system for rAthena that enhances gameplay through intelligent
 - Real-time monitoring and performance optimization
 - Comprehensive configuration system
 - Extensive testing and diagnostic tools
+
+### Integrated Components
+- **WARP P2P Client Integration**
+  * Optimized client-side P2P support
+  * AI-enhanced host selection
+  * Performance monitoring and reporting
+  * Secure communication protocols
+  * Automatic failover handling
+
+- **FluxCP Control Panel Integration**
+  * P2P network monitoring and management
+  * AI system dashboard
+  * Host performance visualization
+  * Security monitoring and control
+  * Real-time metrics and analytics
+  * Administrative tools
 
 ## Requirements
 
@@ -64,10 +80,15 @@ At least one of:
 
 ## Quick Start
 
-1. **Clone the Repository**
+1. **Clone Required Repositories**
    ```bash
-   git clone https://github.com/yourusername/rathena-AI-world.git
+   # Clone main repository
+   git clone https://github.com/iskandarsulaili/rathena-AI-world.git
    cd rathena-AI-world
+
+   # Clone related components
+   git clone https://github.com/iskandarsulaili/FluxCP-AI-world-p2p-hosting.git
+   git clone https://github.com/iskandarsulaili/WARP-p2p-client.git
    ```
 
 2. **Configure Systems**
@@ -114,7 +135,19 @@ At least one of:
    sudo systemctl start p2p-monitor
    ```
 
-5. **Verify Installation**
+5. **Configure WARP Client**
+   ```bash
+   cd ../WARP-p2p-client
+   # Follow WARP client setup instructions
+   ```
+
+6. **Setup FluxCP Panel**
+   ```bash
+   cd ../FluxCP-AI-world-p2p-hosting
+   # Follow FluxCP setup instructions
+   ```
+
+7. **Verify Installation**
    ```bash
    # Check AI system status
    tools/ai_status.sh
@@ -267,6 +300,8 @@ make docs
 - [P2P Security Guide](doc/p2p_security.md)
 - [P2P Hosting Implementation](doc/p2p_hosting_implementation.md)
 - [P2P Monitoring Guide](doc/p2p_monitoring.md)
+- [WARP Client Integration](doc/warp_integration.md)
+- [FluxCP Integration](doc/fluxcp_integration.md)
 - [API Reference](doc/api/README.md)
 - [Development Guide](doc/development.md)
 - [Troubleshooting](doc/troubleshooting.md)
@@ -287,10 +322,14 @@ This project is licensed under the GNU General Public License v3.0 - see the [LI
 
 ## Support
 
-- GitHub Issues: [Report a bug](https://github.com/yourusername/rathena-AI-world/issues)
-- Discord: [Join our community](https://discord.gg/rathena-ai)
-- Documentation: [Visit the wiki](https://github.com/yourusername/rathena-AI-world/wiki)
+- GitHub Issues: [Report a bug](https://github.com/iskandarsulaili/rathena-AI-world/issues)
+- Discord: [Join our community](https://discord.gg/cSSKqzuNr5)
+- Documentation: [Visit the wiki](https://github.com/iskandarsulaili/rathena-AI-world/wiki)
 - Email: support@rathena-ai.org
+
+## Related Projects
+- [WARP P2P Client](https://github.com/iskandarsulaili/WARP-p2p-client) - Client-side P2P hosting support
+- [FluxCP AI World](https://github.com/iskandarsulaili/FluxCP-AI-world-p2p-hosting) - Control panel with AI and P2P features
 
 ## Acknowledgments
 
@@ -298,6 +337,7 @@ This project is licensed under the GNU General Public License v3.0 - see the [LI
 - OpenAI and Azure OpenAI Teams
 - DeepSeek Team
 - WARP P2P Client Team
+- FluxCP Development Team
 - All contributors and testers
 
 ## Project Status
