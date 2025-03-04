@@ -209,7 +209,12 @@ std::string SecureDatabaseSync::hash_query(const std::string& query) {
 
 bool SecureDatabaseSync::register_query_template(const std::string& query) {
     std::string hash = hash_query(query);
-    query_templates_[hash] = SecureQueryTemplate::create(query);
+    auto secure_template = SecureQueryTemplate::create(query);
+    
+    QueryTemplate qt;
+    qt.hash = secure_template.get_hash();
+    qt.pattern = query;
+    query_templates_[hash] = qt;
     return true;
 }
 
