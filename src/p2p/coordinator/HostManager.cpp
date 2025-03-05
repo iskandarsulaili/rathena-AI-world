@@ -11,13 +11,15 @@ namespace p2p {
 HostManager::HostManager(const Config& config)
     : config_(config)
     , next_host_id_(1) {
+    , current_round_robin_index_(0)
     
     performance_metrics_ = {
         .average_cpu = 0.0f,
         .average_memory = 0.0f,
         .average_latency = 0.0f,
         .total_players = 0,
-        .active_hosts = 0
+        .active_hosts = 0,
+        .region_metrics = {}
     };
 }
 
@@ -36,6 +38,7 @@ uint32_t HostManager::register_host(const std::string& address, uint16_t port,
     host.performance_score = 0;
     host.registration_time = std::chrono::system_clock::now();
     host.location = location;
+    host.metrics = {};
     host.last_sync = std::chrono::system_clock::now();
     
     // Generate authentication token
@@ -47,9 +50,14 @@ uint32_t HostManager::register_host(const std::string& address, uint16_t port,
         .last_check = std::chrono::system_clock::now(),
         .is_degraded = false
     };
+
+    // Add to round-robin order
+    round_robin_order_.push_back(host.id);
     
     // Store host info
     hosts_[host.id] = std::move(host);
+
+    rebalance_hosts();
     
     std::cout << "New host registered - ID: " << host.id 
               << ", Address: " << address << ":" << port 
@@ -83,9 +91,34 @@ bool HostManager::update_host_metrics(uint32_t host_id, const HostMetrics& metri
         return false;
     }
     
-    // Update metrics
-    host_it->second.metrics = metrics;
+    auto& current_metrics = host_it->second.metrics;
+    
+    // Update basic metrics
+    current_metrics.cpu_usage = metrics.cpu_usage;
+    current_metrics.memory_usage = metrics.memory_usage;
+    
+    // Update network metrics with history
+    current_metrics.latency_history.push_back(metrics.network_latency);
+    if (current_metrics.latency_history.size() > 10) {
+        current_metrics.latency_history.erase(current_metrics.latency_history.begin());
+    }
+    current_metrics.network_latency = metrics.network_latency;
+    current_metrics.bandwidth_in = metrics.bandwidth_in;
+    current_metrics.bandwidth_out = metrics.bandwidth_out;
+    current_metrics.connection_rate = metrics.connection_rate;
+    current_metrics.packet_rate = metrics.packet_rate;
+    current_metrics.packet_loss = metrics.packet_loss;
+    current_metrics.jitter = metrics.jitter;
     host_it->second.metrics.last_update = std::chrono::system_clock::now();
+    
+    // Check for potential DDoS
+    if (config_.enable_ddos_protection) {
+        bool under_attack = detect_ddos_attack(current_metrics);
+        if (under_attack && !current_metrics.potential_ddos) {
+            std::cout << "DDoS attack detected on host " << host_id << std::endl;
+        }
+        current_metrics.potential_ddos = under_attack;
+    }
     
     // Update health state
     auto& health = health_states_[host_id];
@@ -121,6 +154,7 @@ std::vector<uint32_t> HostManager::get_eligible_hosts(uint32_t min_score) {
     std::sort(eligible_hosts.begin(), eligible_hosts.end(),
         [this](uint32_t a, uint32_t b) {
             return hosts_[a].performance_score > hosts_[b].performance_score;
+            && !hosts_[a].metrics.potential_ddos;
         });
     
     return eligible_hosts;
@@ -421,10 +455,147 @@ void HostManager::log_performance_metrics() {
 }
 
 bool HostManager::validate_host_requirements(const HostMetrics& metrics) {
-    return metrics.cpu_usage < 90.0f &&
-           metrics.memory_usage < 95.0f &&
-           metrics.network_latency < 200.0f &&
+    // Strict network quality requirements
+    const bool network_quality_ok = 
+        metrics.network_latency <= config_.max_latency &&
+        metrics.jitter <= config_.max_jitter &&
+        metrics.packet_loss <= 1.0f &&
+        metrics.bandwidth_in >= config_.bandwidth_requirement &&
+        metrics.bandwidth_out >= config_.bandwidth_requirement;
+
+    // Basic system requirements    
+    const bool system_ok = 
+        metrics.cpu_usage < 90.0f &&
+        metrics.memory_usage < 95.0f &&
+        !metrics.potential_ddos;
+
+    return network_quality_ok && system_ok &&
            metrics.error_count < 10;
+}
+
+float HostManager::calculate_player_limit_multiplier(const HostMetrics& metrics) {
+    float multiplier = 1.0f;
+    
+    // Network quality scaling
+    if (metrics.network_latency > 50.0f) {
+        multiplier *= std::max(0.5f, 1.0f - (metrics.network_latency - 50.0f) / 100.0f);
+    }
+    
+    // System load scaling
+    float load_factor = std::max(metrics.cpu_usage, metrics.memory_usage) / 100.0f;
+    multiplier *= (1.0f - load_factor * 0.5f);
+    
+    // Bandwidth scaling (100 Mbps download, 50 Mbps upload required for max)
+    float bandwidth_factor = std::min(
+        metrics.bandwidth_in / 100.0f,
+        metrics.bandwidth_out / 50.0f
+    );
+    multiplier *= std::min(1.0f, bandwidth_factor);
+    
+    return std::min(config_.max_player_multiplier, 
+                   std::max(0.25f, multiplier));
+}
+
+bool HostManager::detect_ddos_attack(const HostMetrics& metrics) {
+    // Detect sudden spikes in connection rate
+    if (metrics.connection_rate > config_.ddos_threshold) {
+        return true;
+    }
+    
+    // Analyze latency pattern for anomalies
+    if (metrics.latency_history.size() >= 3) {
+        float recent_avg = 0.0f;
+        float old_avg = 0.0f;
+        
+        for (size_t i = 0; i < 3; i++) {
+            recent_avg += metrics.latency_history[metrics.latency_history.size() - 1 - i];
+            old_avg += metrics.latency_history[i];
+        }
+        recent_avg /= 3.0f;
+        old_avg /= 3.0f;
+        
+        // Detect significant latency increase
+        if (recent_avg > old_avg * 3.0f) {
+            return true;
+        }
+    }
+    
+    return false;
+}
+
+void HostManager::restore_round_robin_state(uint32_t failed_host_id) {
+    std::lock_guard<std::mutex> lock(state_mutex_);
+    
+    // Remove failed host from round-robin order
+    auto it = std::find(round_robin_order_.begin(), round_robin_order_.end(), failed_host_id);
+    if (it != round_robin_order_.end()) {
+        round_robin_order_.erase(it);
+        
+        // Adjust current index if needed
+        if (current_round_robin_index_ >= round_robin_order_.size()) {
+            current_round_robin_index_ = 0;
+        }
+    }
+    
+    // Rebalance remaining hosts
+    rebalance_hosts();
+}
+
+bool HostManager::try_host_recovery(uint32_t host_id) {
+    auto host_it = hosts_.find(host_id);
+    if (host_it == hosts_.end() || !host_it->second.is_vps) {
+        return false;
+    }
+    
+    // Attempt VPS recovery
+    bool recovery_success = false;
+    int attempts = 0;
+    const int max_attempts = 3;
+    
+    while (!recovery_success && attempts < max_attempts) {
+        // Try to restart the host process
+        health_states_[host_id].consecutive_failures = 0;
+        health_states_[host_id].is_degraded = false;
+        
+        // Wait and verify connectivity
+        std::this_thread::sleep_for(std::chrono::seconds(5));
+        
+        if (validate_host_requirements(host_it->second.metrics)) {
+            recovery_success = true;
+            
+            // Restore to round-robin pool
+            if (std::find(round_robin_order_.begin(), round_robin_order_.end(), 
+                host_id) == round_robin_order_.end()) {
+                round_robin_order_.push_back(host_id);
+            }
+            
+            std::cout << "VPS host " << host_id << " recovered after " 
+                      << attempts + 1 << " attempts" << std::endl;
+            break;
+        }
+        
+        attempts++;
+    }
+    
+    if (!recovery_success) {
+        // Remove from round-robin and trigger failover
+        restore_round_robin_state(host_id);
+    }
+    
+    return recovery_success;
+}
+
+bool HostManager::validate_host_capacity(uint32_t host_id) {
+    auto host_it = hosts_.find(host_id);
+    if (host_it == hosts_.end()) {
+        return false;
+    }
+    
+    // Calculate dynamic player limit
+    float multiplier = calculate_player_limit_multiplier(host_it->second.metrics);
+    uint32_t dynamic_limit = static_cast<uint32_t>(config_.base_player_limit * multiplier);
+    
+    return get_session_count(host_id) < dynamic_limit;
 }
 
 bool HostManager::validate_host_capacity(uint32_t host_id) {

@@ -18,6 +18,14 @@ struct HostMetrics {
     float network_latency;
     uint32_t player_count;
     uint32_t error_count;
+    float bandwidth_in;      // Incoming bandwidth in Mbps
+    float bandwidth_out;     // Outgoing bandwidth in Mbps
+    uint32_t connection_rate;   // New connections per second
+    uint32_t packet_rate;      // Packets per second
+    float packet_loss;         // Packet loss percentage
+    float jitter;             // Network jitter in ms
+    std::vector<float> latency_history; // Recent latency measurements
+    bool potential_ddos;      // DDoS detection flag
     std::chrono::system_clock::time_point last_update;
 };
 
@@ -58,6 +66,13 @@ public:
         bool enable_auto_failover;
         double max_session_distance;  // Maximum distance (km) for session assignments
         uint32_t sync_interval;       // Map state sync interval in seconds
+        float base_player_limit;     // Base number of players per host
+        float max_player_multiplier; // Maximum player limit multiplier
+        uint32_t ddos_threshold;    // Connections per second threshold for DDoS
+        float bandwidth_requirement; // Minimum bandwidth required per player
+        float max_latency;         // Maximum acceptable latency
+        float max_jitter;         // Maximum acceptable jitter
+        bool enable_ddos_protection; // Enable DDoS protection
     };
 
     explicit HostManager(const Config& config);
@@ -117,6 +132,8 @@ private:
     // Host validation
     bool validate_host_requirements(const HostMetrics& metrics);
     bool validate_host_capacity(uint32_t host_id);
+    float calculate_player_limit_multiplier(const HostMetrics& metrics);
+    bool detect_ddos_attack(const HostMetrics& metrics);
     
     // Authentication
     std::string generate_auth_token();
@@ -125,6 +142,7 @@ private:
     // Health monitoring
     void mark_host_unhealthy(uint32_t host_id);
     bool try_host_recovery(uint32_t host_id);
+    void restore_round_robin_state(uint32_t failed_host_id);
     
     // Load balancing
     void rebalance_hosts();
@@ -138,6 +156,8 @@ private:
         std::chrono::system_clock::time_point last_check;
         bool is_degraded;
     };
+    std::vector<uint32_t> round_robin_order_; // Track round-robin host order
+    uint32_t current_round_robin_index_;
     std::unordered_map<uint32_t, HealthCheckState> health_states_;
     
     // Metrics tracking
