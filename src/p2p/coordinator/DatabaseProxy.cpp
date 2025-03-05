@@ -3,6 +3,7 @@
 #include <iostream>
 #include <sstream>
 #include "../common/crypt.hpp"
+#include <cmath>
 
 namespace rathena {
 namespace p2p {
@@ -22,20 +23,77 @@ public:
         }
     }
 
+    // Geographic query execution
+    QueryResult execute_geo_query(const std::string& query, const std::vector<std::string>& params) {
+        QueryResult result;
+        result.success = true;
+        
+        try {
+            // TODO: Implement actual spatial query execution
+            // This will use MySQL's spatial extensions (ST_Distance_Sphere, etc.)
+        } catch (const std::exception& e) {
+            result.success = false;
+            result.error_message = e.what();
+        }
+        
+        return result;
+    }
+
+    // Session operations
+    QueryResult execute_session_query(const std::string& query, const std::vector<std::string>& params) {
+        QueryResult result;
+        result.success = true;
+        
+        try {
+            // TODO: Implement session management queries
+            // Will handle p2p_active_sessions table operations
+        } catch (const std::exception& e) {
+            result.success = false;
+            result.error_message = e.what();
+        }
+        
+        return result;
+    }
+
+    // Map sync operations
+    QueryResult execute_sync_query(const std::string& query, const std::vector<std::string>& params) {
+        QueryResult result;
+        result.success = true;
+        
+        try {
+            // TODO: Implement map sync state queries
+            // Will handle p2p_map_sync_state table operations
+        } catch (const std::exception& e) {
+            result.success = false;
+            result.error_message = e.what();
+        }
+        
+        return result;
+    }
+
     // Query execution
     QueryResult execute_query(const QueryRequest& request) {
         QueryResult result;
         result.request_id = request.request_id;
 
         try {
-            // Validate and sanitize query
+            // Validate query and check permissions
             if (!validate_query(request)) {
                 throw std::runtime_error("Invalid query");
             }
 
-            // Execute query through connection pool
-            // TODO: Implement actual query execution
-            result.success = true;
+            // Route to appropriate handler based on query type
+            if (is_geo_query(request.query)) {
+                result = execute_geo_query(request.query, request.parameters);
+            } else if (is_session_query(request.query)) {
+                result = execute_session_query(request.query, request.parameters);
+            } else if (is_sync_query(request.query)) {
+                result = execute_sync_query(request.query, request.parameters);
+            } else {
+                // Standard query execution
+                // TODO: Implement actual query execution
+                result.success = true;
+            }
 
         } catch (const std::exception& e) {
             result.success = false;
@@ -48,29 +106,71 @@ public:
 private:
     Config config_;
     
+    bool is_geo_query(const std::string& query) {
+        std::string lower_query = query;
+        std::transform(lower_query.begin(), lower_query.end(), lower_query.begin(), ::tolower);
+        return lower_query.find("st_distance_sphere") != std::string::npos ||
+               lower_query.find("st_point") != std::string::npos;
+    }
+
+    bool is_session_query(const std::string& query) {
+        std::string lower_query = query;
+        std::transform(lower_query.begin(), lower_query.end(), lower_query.begin(), ::tolower);
+        return lower_query.find("p2p_active_sessions") != std::string::npos;
+    }
+
+    bool is_sync_query(const std::string& query) {
+        std::string lower_query = query;
+        std::transform(lower_query.begin(), lower_query.end(), lower_query.begin(), ::tolower);
+        return lower_query.find("p2p_map_sync_state") != std::string::npos;
+    }
+
     bool validate_query(const QueryRequest& request) {
         // Basic validation rules
         if (request.query.empty()) {
             return false;
         }
 
-        // Check for dangerous operations
-        std::string query_lower = request.query;
-        std::transform(query_lower.begin(), query_lower.end(), 
-                      query_lower.begin(), ::tolower);
+        std::string lower_query = request.query;
+        std::transform(lower_query.begin(), lower_query.end(), 
+                      lower_query.begin(), ::tolower);
 
+        // Check for dangerous operations
         const std::vector<std::string> forbidden_keywords = {
             "drop", "truncate", "delete from", "update without where",
             "grant", "revoke", "alter system", "shutdown"
         };
 
         for (const auto& keyword : forbidden_keywords) {
-            if (query_lower.find(keyword) != std::string::npos) {
+            if (lower_query.find(keyword) != std::string::npos) {
+                return false;
+            }
+        }
+
+        // Table-specific validation
+        if (lower_query.find("p2p_active_sessions") != std::string::npos) {
+            if (!validate_session_query(lower_query)) {
+                return false;
+            }
+        }
+
+        if (lower_query.find("p2p_map_sync_state") != std::string::npos) {
+            if (!validate_sync_query(lower_query)) {
                 return false;
             }
         }
 
         return true;
+    }
+
+    bool validate_session_query(const std::string& query) {
+        // Add session-specific validation rules
+        return true; // TODO: Implement validation
+    }
+
+    bool validate_sync_query(const std::string& query) {
+        // Add sync-specific validation rules
+        return true; // TODO: Implement validation
     }
 };
 
@@ -290,6 +390,107 @@ void DatabaseProxy::log_metrics() {
         << "Average Response Time: " << metrics_.average_response_time << "ms";
     
     std::cout << oss.str() << std::endl;
+}
+
+// Geographic operations implementation
+bool DatabaseProxy::register_host_location(host_id_t host_id, const GeoPoint& location, const std::string& region) {
+    std::stringstream query;
+    query << "UPDATE p2p_hosts SET "
+          << "location = ST_PointFromText('" << serialize_point(location) << "'), "
+          << "region = '" << region << "' "
+          << "WHERE host_id = " << host_id;
+
+    QueryRequest request{
+        .host_id = host_id,
+        .type = QueryType::UPDATE,
+        .query = query.str()
+    };
+
+    auto result = impl_->execute_query(request);
+    return result.success;
+}
+
+std::vector<DatabaseProxy::HostLocation> DatabaseProxy::find_nearest_hosts(
+    const GeoPoint& location, uint32_t limit) {
+    std::stringstream query;
+    query << "SELECT host_id, "
+          << "ST_X(location) as lat, ST_Y(location) as lng, "
+          << "region, performance_score "
+          << "FROM p2p_hosts "
+          << "WHERE status = 'online' "
+          << "ORDER BY ST_Distance_Sphere(location, ST_PointFromText('"
+          << serialize_point(location) << "')) LIMIT " << limit;
+
+    QueryRequest request{
+        .host_id = 0, // System query
+        .type = QueryType::SELECT,
+        .query = query.str()
+    };
+
+    auto result = impl_->execute_query(request);
+    std::vector<HostLocation> hosts;
+
+    if (result.success) {
+        for (const auto& row : result.rows) {
+            HostLocation host;
+            host.host_id = std::stoul(row[0]);
+            host.location.latitude = std::stod(row[1]);
+            host.location.longitude = std::stod(row[2]);
+            host.region = row[3];
+            host.performance_score = std::stof(row[4]);
+            hosts.push_back(host);
+        }
+    }
+
+    return hosts;
+}
+
+// Session management implementation
+uint32_t DatabaseProxy::create_session(const SessionData& session) {
+    std::stringstream query;
+    query << "INSERT INTO p2p_active_sessions "
+          << "(char_id, account_id, host_id, map_id, connection_data) VALUES "
+          << "(" << session.char_id << ", "
+          << session.account_id << ", "
+          << session.host_id << ", "
+          << session.map_id << ", '"
+          << encrypt_sensitive_data(session.connection_data) << "')";
+
+    QueryRequest request{
+        .host_id = session.host_id,
+        .type = QueryType::INSERT,
+        .query = query.str()
+    };
+
+    auto result = impl_->execute_query(request);
+    if (!result.success) {
+        throw std::runtime_error("Failed to create session: " + result.error_message);
+    }
+
+    return std::stoul(result.rows[0][0]); // Return the new session_id
+}
+
+// Utility functions
+std::string DatabaseProxy::serialize_point(const GeoPoint& point) {
+    std::stringstream ss;
+    ss << "POINT(" << point.latitude << " " << point.longitude << ")";
+    return ss.str();
+}
+
+GeoPoint DatabaseProxy::deserialize_point(const std::string& data) {
+    GeoPoint point;
+    std::string clean_data = data;
+    clean_data.erase(
+        std::remove_if(clean_data.begin(), clean_data.end(),
+                      [](char c) { return c == 'P' || c == 'O' || c == 'I' || 
+                                         c == 'N' || c == 'T' || c == '(' || 
+                                         c == ')'; }),
+        clean_data.end()
+    );
+
+    std::stringstream ss(clean_data);
+    ss >> point.latitude >> point.longitude;
+    return point;
 }
 
 } // namespace p2p

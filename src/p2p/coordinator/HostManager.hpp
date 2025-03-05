@@ -21,6 +21,18 @@ struct HostMetrics {
     std::chrono::system_clock::time_point last_update;
 };
 
+struct GeoLocation {
+    double latitude;
+    double longitude;
+    std::string region;
+};
+
+struct SessionInfo {
+    uint32_t char_id;
+    uint32_t map_id;
+    std::chrono::system_clock::time_point start_time;
+};
+
 struct HostInfo {
     uint32_t id;
     std::string address;
@@ -31,6 +43,9 @@ struct HostInfo {
     std::vector<uint32_t> hosted_maps;
     std::string auth_token;
     std::chrono::system_clock::time_point registration_time;
+    GeoLocation location;
+    std::vector<SessionInfo> active_sessions;
+    std::chrono::system_clock::time_point last_sync;
 };
 
 class HostManager {
@@ -41,13 +56,16 @@ public:
         uint32_t grace_period;
         uint32_t max_players_per_host;
         bool enable_auto_failover;
+        double max_session_distance;  // Maximum distance (km) for session assignments
+        uint32_t sync_interval;       // Map state sync interval in seconds
     };
 
     explicit HostManager(const Config& config);
     ~HostManager();
 
     // Host registration and management
-    uint32_t register_host(const std::string& address, uint16_t port, bool is_vps);
+    uint32_t register_host(const std::string& address, uint16_t port, bool is_vps,
+                          const GeoLocation& location);
     bool unregister_host(uint32_t host_id);
     bool update_host_metrics(uint32_t host_id, const HostMetrics& metrics);
     
@@ -56,6 +74,8 @@ public:
     HostInfo* get_host_info(uint32_t host_id);
     bool is_host_healthy(uint32_t host_id);
     uint32_t get_best_host_for_map(uint32_t map_id);
+    std::vector<uint32_t> get_nearby_hosts(const GeoLocation& location, 
+                                          double max_distance);
     
     // Map assignment
     bool assign_map_to_host(uint32_t map_id, uint32_t host_id);
@@ -70,11 +90,29 @@ public:
     uint32_t calculate_host_score(const HostMetrics& metrics);
     void update_performance_scores();
     
+    // Session management
+    bool start_player_session(uint32_t host_id, uint32_t char_id, uint32_t map_id);
+    bool end_player_session(uint32_t host_id, uint32_t char_id);
+    std::vector<SessionInfo> get_active_sessions(uint32_t host_id);
+    uint32_t get_session_count(uint32_t host_id);
+    
+    // State synchronization
+    bool mark_map_synced(uint32_t host_id, uint32_t map_id);
+    bool needs_sync(uint32_t host_id, uint32_t map_id);
+    std::vector<uint32_t> get_out_of_sync_maps(uint32_t host_id);
+    
 private:
     // Internal state
     std::mutex state_mutex_;
     std::unordered_map<uint32_t, HostInfo> hosts_;
     uint32_t next_host_id_;
+    
+    // Geographic utilities
+    double calculate_distance(const GeoLocation& loc1, const GeoLocation& loc2);
+    bool is_within_range(const GeoLocation& loc1, const GeoLocation& loc2, 
+                        double max_distance);
+    std::vector<uint32_t> sort_hosts_by_distance(const GeoLocation& location,
+                                                const std::vector<uint32_t>& hosts);
     
     // Host validation
     bool validate_host_requirements(const HostMetrics& metrics);
@@ -91,6 +129,7 @@ private:
     // Load balancing
     void rebalance_hosts();
     float calculate_host_load(uint32_t host_id);
+    void distribute_sessions_geographically();
     
     // Configuration and state
     Config config_;
@@ -108,6 +147,13 @@ private:
         float average_latency;
         uint32_t total_players;
         uint32_t active_hosts;
+        struct RegionMetrics {
+            uint32_t host_count;
+            uint32_t player_count;
+            float average_latency;
+        };
+        std::unordered_map<std::string, RegionMetrics> region_metrics;
+        void update_region_metrics(const std::string& region, const HostMetrics& metrics);
     } performance_metrics_;
     
     void update_performance_metrics();

@@ -50,6 +50,70 @@ public:
         std::vector<std::vector<std::string>> rows;
     };
 
+    // Geographic-aware host operations
+    struct GeoPoint {
+        double latitude;
+        double longitude;
+    };
+
+    struct HostLocation {
+        host_id_t host_id;
+        GeoPoint location;
+        std::string region;
+        float performance_score;
+    };
+
+    struct SessionData {
+        uint32_t session_id;
+        uint32_t char_id;
+        uint32_t account_id;
+        host_id_t host_id;
+        uint32_t map_id;
+        std::chrono::system_clock::time_point started_at;
+        std::chrono::system_clock::time_point last_ping;
+        std::string connection_data;
+    };
+
+    struct MapSyncState {
+        uint32_t sync_id;
+        uint32_t map_id;
+        host_id_t host_id;
+        std::chrono::system_clock::time_point last_full_sync;
+        std::chrono::system_clock::time_point last_delta_sync;
+        std::string state_hash;
+        enum class Status {
+            Synced,
+            Syncing,
+            OutOfSync,
+            Error
+        } status;
+        std::string sync_details;
+    };
+
+    // New high-level operations
+    bool register_host_location(host_id_t host_id, const GeoPoint& location, const std::string& region);
+    std::vector<HostLocation> find_nearest_hosts(const GeoPoint& location, uint32_t limit = 5);
+    
+    // Session management
+    uint32_t create_session(const SessionData& session);
+    bool update_session_ping(uint32_t session_id);
+    bool end_session(uint32_t session_id);
+    std::vector<SessionData> get_host_sessions(host_id_t host_id);
+    
+    // State synchronization
+    bool update_map_sync_state(const MapSyncState& state);
+    MapSyncState get_map_sync_state(uint32_t map_id, host_id_t host_id);
+    std::vector<MapSyncState> get_out_of_sync_maps(host_id_t host_id);
+    
+    // Migration tracking
+    struct MigrationEvent {
+        uint32_t char_id;
+        host_id_t source_host;
+        host_id_t target_host;
+        std::string reason;
+    };
+    bool record_migration(const MigrationEvent& migration);
+
     explicit DatabaseProxy(const Config& config);
     ~DatabaseProxy();
 
@@ -80,13 +144,23 @@ private:
     bool authenticate_host(host_id_t host_id);
     std::string encrypt_sensitive_data(const std::string& data);
     std::string decrypt_sensitive_data(const std::string& data);
+    bool check_rate_limit(host_id_t host_id);
     
+    // Geographic utilities
+    double calculate_distance(const GeoPoint& p1, const GeoPoint& p2);
+    std::string serialize_point(const GeoPoint& point);
+    GeoPoint deserialize_point(const std::string& data);
+
     // Cache management
     struct CacheEntry {
         std::vector<std::vector<std::string>> data;
         std::chrono::system_clock::time_point timestamp;
         uint32_t access_count;
     };
+    
+    // State tracking for rate limiting
+    bool check_rate_limit(host_id_t host_id);
+    void update_rate_limit(host_id_t host_id, bool success);
     
     // Rate limiting
     struct HostState {
