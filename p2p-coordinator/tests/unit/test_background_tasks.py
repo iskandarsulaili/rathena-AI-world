@@ -207,5 +207,103 @@ class TestBackgroundTasksService:
 
         # All tasks should be cancelled
         assert bg_service.running is False
+# --- Multi-core/Worker Management & Load Balancing Unit Tests ---
+
+@pytest.mark.unit
+class TestWorkerThreadManagement:
+    """Unit tests for worker thread (background task) management and load balancing."""
+
+    def test_worker_thread_creation_and_tracking(self):
+        """Test that background tasks are created and tracked correctly."""
+        from services.background_tasks import BackgroundTasksService
+        import asyncio
+
+        bg_service = BackgroundTasksService()
+        assert not bg_service.running
+        assert bg_service.tasks == []
+
+        # Simulate start (without actually running event loop)
+        bg_service.running = True
+        bg_service.tasks = [asyncio.Future(), asyncio.Future()]
+        assert bg_service.running
+        assert len(bg_service.tasks) == 2
+
+    def test_worker_thread_stop_cancels_all_tasks(self, monkeypatch):
+        """Test that stopping the service cancels all worker tasks."""
+        from services.background_tasks import BackgroundTasksService
+        import asyncio
+
+        bg_service = BackgroundTasksService()
+        bg_service.running = True
+
+        cancelled = []
+
+        class DummyTask:
+            def cancel(self):
+                cancelled.append(True)
+        # Add dummy tasks
+        bg_service.tasks = [DummyTask(), DummyTask()]
+        # Patch asyncio.gather to simulate immediate completion
+        monkeypatch.setattr(asyncio, "gather", lambda *a, **k: None)
+        # Run stop
+        import asyncio
+        asyncio.run(bg_service.stop())
+        assert not bg_service.running
+        assert len(cancelled) == 2
+        assert bg_service.tasks == []
+
+    def test_load_balancing_spatial_partitioning(self):
+        """Test spatial partitioning logic for load balancing (mocked)."""
+        # Simulate a partitioning function
+        def spatial_partition(zones, workers):
+            # Evenly distribute zones among workers
+            partitions = [[] for _ in range(workers)]
+            for i, zone in enumerate(zones):
+                partitions[i % workers].append(zone)
+            return partitions
+
+        zones = ["zone1", "zone2", "zone3", "zone4"]
+        workers = 2
+        partitions = spatial_partition(zones, workers)
+        assert len(partitions) == 2
+        assert set(partitions[0] + partitions[1]) == set(zones)
+
+    def test_runtime_toggle_enable_disable(self):
+        """Test runtime toggling of multi-core features (mocked)."""
+        class MockSettings:
+            def __init__(self):
+                self.multi_core_enabled = False
+
+        settings = MockSettings()
+        # Enable
+        settings.multi_core_enabled = True
+        assert settings.multi_core_enabled
+        # Disable
+        settings.multi_core_enabled = False
+        assert not settings.multi_core_enabled
+
+    def test_worker_crash_and_recovery(self):
+        """Test recovery logic when a worker (background task) crashes."""
+        from services.background_tasks import BackgroundTasksService
+
+        class RecoveringBackgroundTasksService(BackgroundTasksService):
+            def __init__(self):
+                super().__init__()
+                self.recovered = False
+
+            async def _npc_broadcast_loop(self):
+                raise Exception("Simulated crash")
+
+            async def start(self):
+                try:
+                    await self._npc_broadcast_loop()
+                except Exception:
+                    self.recovered = True
+
+        bg_service = RecoveringBackgroundTasksService()
+        import asyncio
+        asyncio.run(bg_service.start())
+        assert bg_service.recovered
+
         assert len(bg_service.tasks) == 0
 

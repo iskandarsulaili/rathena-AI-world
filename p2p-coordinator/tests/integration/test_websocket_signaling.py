@@ -217,6 +217,83 @@ class TestWebSocketSignaling:
                     assert response["type"] in ["session-joined", "peer-joined"]  # Updated message types
             except:
                 pass  # No immediate message is also acceptable
+    def test_protocol_negotiation_and_fallback(self, websocket_client: TestClient):
+        """
+        Simulate protocol negotiation and fallback at the API boundary.
+        - Simulate a client that supports only QUIC, only WebRTC, or neither.
+        - Expect correct negotiation, fallback, or error.
+        """
+        peer_id = generate_player_id()
+        session_id = generate_session_id()
+
+        # Simulate negotiation: client supports both QUIC and WebRTC
+        with websocket_client.websocket_connect(
+            f"/api/v1/signaling/ws?peer_id={peer_id}&session_id={session_id}"
+        ) as websocket:
+            # Simulate protocol negotiation message
+            websocket.send_json({
+                "type": "protocol-negotiate",
+                "supported": ["quic", "webrtc"]
+            })
+            # Expect server to prefer QUIC
+            response = websocket.receive_json()
+            assert response.get("type") == "protocol-selected"
+            assert response.get("protocol") == "quic"
+
+        # Simulate negotiation: client supports only WebRTC
+        peer_id2 = generate_player_id()
+        session_id2 = generate_session_id()
+        with websocket_client.websocket_connect(
+            f"/api/v1/signaling/ws?peer_id={peer_id2}&session_id={session_id2}"
+        ) as websocket:
+            websocket.send_json({
+                "type": "protocol-negotiate",
+                "supported": ["webrtc"]
+            })
+            response = websocket.receive_json()
+            assert response.get("type") == "protocol-selected"
+            assert response.get("protocol") == "webrtc"
+
+        # Simulate negotiation: client supports neither
+        peer_id3 = generate_player_id()
+        session_id3 = generate_session_id()
+        with websocket_client.websocket_connect(
+            f"/api/v1/signaling/ws?peer_id={peer_id3}&session_id={session_id3}"
+        ) as websocket:
+            websocket.send_json({
+                "type": "protocol-negotiate",
+                "supported": []
+            })
+            response = websocket.receive_json()
+            assert response.get("type") == "protocol-error"
+            assert "No supported protocol" in response.get("message", "")
+
+    def test_protocol_runtime_fallback(self, websocket_client: TestClient):
+        """
+        Simulate runtime protocol failure and fallback (e.g., QUIC fails, fallback to WebRTC).
+        """
+        peer_id = generate_player_id()
+        session_id = generate_session_id()
+        with websocket_client.websocket_connect(
+            f"/api/v1/signaling/ws?peer_id={peer_id}&session_id={session_id}"
+        ) as websocket:
+            # Simulate initial negotiation: QUIC selected
+            websocket.send_json({
+                "type": "protocol-negotiate",
+                "supported": ["quic", "webrtc"]
+            })
+            response = websocket.receive_json()
+            assert response.get("protocol") == "quic"
+
+            # Simulate QUIC failure at runtime
+            websocket.send_json({
+                "type": "protocol-failure",
+                "failed_protocol": "quic"
+            })
+            # Expect fallback to WebRTC
+            response = websocket.receive_json()
+            assert response.get("type") == "protocol-fallback"
+            assert response.get("protocol") == "webrtc"
 
 
 @pytest.mark.integration

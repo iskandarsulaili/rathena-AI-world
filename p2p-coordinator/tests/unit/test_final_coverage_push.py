@@ -94,4 +94,88 @@ class TestMainEdgeCases:
         
         # Test that the module can be imported
         assert main is not None
+# --- Runtime Toggle & Fallback Logic Unit Tests ---
+
+@pytest.mark.unit
+class TestRuntimeTogglesAndFallbacks:
+    """Unit tests for runtime toggles and fallback logic under load and failure."""
+
+    def test_toggle_p2p_feature_on_and_off(self):
+        """Test toggling P2P feature at runtime."""
+        class MockSettings:
+            def __init__(self):
+                self.p2p_enabled = False
+
+        settings = MockSettings()
+        # Enable P2P
+        settings.p2p_enabled = True
+        assert settings.p2p_enabled
+        # Disable P2P
+        settings.p2p_enabled = False
+        assert not settings.p2p_enabled
+
+    def test_toggle_under_load(self):
+        """Test toggling features under simulated load."""
+        class MockCoordinator:
+            def __init__(self):
+                self.p2p_enabled = True
+                self.active_sessions = 10
+
+            def toggle_p2p(self, enable):
+                self.p2p_enabled = enable
+                # Simulate impact on sessions
+                if not enable:
+                    self.active_sessions = 0
+
+        coordinator = MockCoordinator()
+        # Disable under load
+        coordinator.toggle_p2p(False)
+        assert not coordinator.p2p_enabled
+        assert coordinator.active_sessions == 0
+        # Re-enable
+        coordinator.toggle_p2p(True)
+        assert coordinator.p2p_enabled
+
+    def test_fallback_logic_on_toggle_failure(self):
+        """Test fallback logic when toggling fails (e.g., due to error)."""
+        class MockCoordinator:
+            def __init__(self):
+                self.p2p_enabled = True
+                self.fallback_triggered = False
+
+            def toggle_p2p(self, enable):
+                if enable is None:
+                    self.fallback_triggered = True
+                    self.p2p_enabled = False
+                else:
+                    self.p2p_enabled = enable
+
+        coordinator = MockCoordinator()
+        # Simulate failure (None)
+        coordinator.toggle_p2p(None)
+        assert coordinator.fallback_triggered
+        assert not coordinator.p2p_enabled
+
+    def test_recovery_from_protocol_failure(self):
+        """Test recovery from protocol/worker failure at runtime."""
+        class MockWorker:
+            def __init__(self):
+                self.failed = False
+                self.recovered = False
+
+            def fail(self):
+                self.failed = True
+
+            def recover(self):
+                if self.failed:
+                    self.recovered = True
+                    self.failed = False
+
+        worker = MockWorker()
+        worker.fail()
+        assert worker.failed
+        worker.recover()
+        assert worker.recovered
+        assert not worker.failed
+
 

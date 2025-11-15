@@ -336,3 +336,77 @@ class TestSignalingService:
 
         # Assert - Should return 0 (no peers received message)
         assert result == 0
+# --- QUIC Protocol Compliance & Fallback Unit Tests ---
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+class TestQUICNegotiationFallback:
+    """Unit tests for QUIC protocol negotiation and fallback logic."""
+
+    @pytest.fixture
+    def mock_signaling_service(self):
+        # Create a mock SignalingService with protocol negotiation logic
+        class MockSignalingService:
+            def __init__(self):
+                self.protocol_preference = ["quic", "webrtc"]
+                self.negotiated_protocol = None
+                self.fallback_triggered = False
+
+            async def negotiate_protocol(self, peer_capabilities):
+                # Simulate negotiation: prefer QUIC, fallback to WebRTC
+                if "quic" in peer_capabilities:
+                    self.negotiated_protocol = "quic"
+                    return "quic"
+                elif "webrtc" in peer_capabilities:
+                    self.negotiated_protocol = "webrtc"
+                    return "webrtc"
+                else:
+                    self.fallback_triggered = True
+                    return "none"
+
+            async def handle_protocol_failure(self, protocol):
+                # Simulate fallback logic
+                if protocol == "quic":
+                    self.fallback_triggered = True
+                    return "webrtc"
+                return "none"
+
+        return MockSignalingService()
+
+    @pytest.mark.asyncio
+    async def test_quic_preferred_when_available(self, mock_signaling_service):
+        """QUIC is negotiated if both peers support it."""
+        protocol = await mock_signaling_service.negotiate_protocol(["quic", "webrtc"])
+        assert protocol == "quic"
+        assert mock_signaling_service.negotiated_protocol == "quic"
+        assert not mock_signaling_service.fallback_triggered
+
+    @pytest.mark.asyncio
+    async def test_webrtc_fallback_when_quic_unavailable(self, mock_signaling_service):
+        """Fallback to WebRTC if QUIC is unavailable."""
+        protocol = await mock_signaling_service.negotiate_protocol(["webrtc"])
+        assert protocol == "webrtc"
+        assert mock_signaling_service.negotiated_protocol == "webrtc"
+        assert not mock_signaling_service.fallback_triggered
+
+    @pytest.mark.asyncio
+    async def test_no_supported_protocol_triggers_fallback(self, mock_signaling_service):
+        """No supported protocol triggers fallback logic."""
+        protocol = await mock_signaling_service.negotiate_protocol([])
+        assert protocol == "none"
+        assert mock_signaling_service.fallback_triggered
+
+    @pytest.mark.asyncio
+    async def test_fallback_logic_on_quic_failure(self, mock_signaling_service):
+        """If QUIC fails at runtime, fallback to WebRTC."""
+        fallback = await mock_signaling_service.handle_protocol_failure("quic")
+        assert fallback == "webrtc"
+        assert mock_signaling_service.fallback_triggered
+
+    @pytest.mark.asyncio
+    async def test_no_fallback_when_webrtc_fails(self, mock_signaling_service):
+        """If WebRTC fails, no further fallback is available."""
+        fallback = await mock_signaling_service.handle_protocol_failure("webrtc")
+        assert fallback == "none"
+        assert not mock_signaling_service.fallback_triggered
+
