@@ -39,9 +39,9 @@ fi
 source .env
 
 # Check for API keys
-if [ -z "$OPENAI_API_KEY" ] && [ -z "$ANTHROPIC_API_KEY" ] && [ -z "$GOOGLE_API_KEY" ]; then
+if [ -z "$OPENAI_API_KEY" ] && [ -z "$ANTHROPIC_API_KEY" ] && [ -z "$GOOGLE_API_KEY" ] && [ -z "$AZURE_OPENAI_API_KEY" ]; then
     print_warning "No LLM API key found in .env!"
-    print_warning "Please set at least one: OPENAI_API_KEY, ANTHROPIC_API_KEY, or GOOGLE_API_KEY"
+    print_warning "Please set at least one: OPENAI_API_KEY, ANTHROPIC_API_KEY, GOOGLE_API_KEY, or AZURE_OPENAI_API_KEY"
     exit 1
 fi
 
@@ -60,12 +60,42 @@ print_success "PostgreSQL is running"
 # ============================================
 # 2. Check Redis
 # ============================================
-print_step "Checking Redis..."
-if ! sudo systemctl is-active --quiet redis; then
-    print_step "Starting Redis..."
-    sudo systemctl start redis
+print_step "Checking DragonflyDB..."
+if sudo systemctl is-active --quiet dragonfly; then
+    print_success "DragonflyDB is running"
+else
+    print_step "Starting DragonflyDB..."
+    sudo systemctl start dragonfly
+    if sudo systemctl is-active --quiet dragonfly; then
+        print_success "DragonflyDB started"
+    else
+        print_warning "DragonflyDB could not be started. Please check the service status."
+    fi
 fi
-print_success "Redis is running"
+
+# ============================================
+# 5. Start AIWorld Server (ZeroMQ IPC)
+# ============================================
+print_step "Starting AIWorld Server..."
+if [ -f src/aiworld/aiworld_server ]; then
+    screen -S aiworld-server -X quit 2>/dev/null || true
+    screen -dmS aiworld-server bash -c "./src/aiworld/aiworld_server"
+    print_success "AIWorld Server started"
+else
+    print_warning "AIWorld Server binary not found at src/aiworld/aiworld_server"
+fi
+
+# ============================================
+# 6. Start P2P Coordinator Service
+# ============================================
+print_step "Starting P2P Coordinator Service..."
+if [ -d p2p-coordinator/venv ]; then
+    screen -S p2p-coordinator -X quit 2>/dev/null || true
+    screen -dmS p2p-coordinator bash -c "cd p2p-coordinator/coordinator-service && ../venv/bin/python main.py"
+    print_success "P2P Coordinator Service started"
+else
+    print_warning "P2P Coordinator virtual environment not found. Please set up Python venv in p2p-coordinator."
+fi
 
 # ============================================
 # 3. Start AI Service

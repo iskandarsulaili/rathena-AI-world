@@ -11,6 +11,7 @@ autom4te.cache/
 .ycm_extra_conf.py*
 Thumbs.db
 *.service
+.env
 
 # /
 /*_fifo
@@ -128,6 +129,12 @@ Thumbs.db
 /.idea/vcs.xml
 /.idea/workspace.xml
 /build/
+/src/aiworld/build/
+/src/aiworld/CMakeFiles/
+/src/aiworld/Makefile
+/src/aiworld/cmake_install.cmake
+/src/aiworld/libaiworld_plugin.so
+/src/aiworld/aiworld_server
 /cbuild/
 
 # bat tools

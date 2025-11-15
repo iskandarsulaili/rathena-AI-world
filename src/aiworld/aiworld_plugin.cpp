@@ -25,7 +25,7 @@ bool SecurityManager::validate_signature(const std::string& peer_id, const std::
 void SecurityManager::blacklist_peer(const std::string& peer_id) {
     if (!config_.enable_peer_blacklisting) return;
     peer_states_[peer_id].blacklisted = true;
-    log_warn("Peer blacklisted: " + peer_id);
+    aiworld::log_warn("Peer blacklisted: " + peer_id);
 }
 
 bool SecurityManager::is_peer_blacklisted(const std::string& peer_id) const {
@@ -36,7 +36,7 @@ bool SecurityManager::is_peer_blacklisted(const std::string& peer_id) const {
 void SecurityManager::record_anomaly(const std::string& peer_id, const std::string& type) {
     if (!config_.enable_anomaly_detection) return;
     peer_states_[peer_id].cheat_flags += 1;
-    log_warn("Anomaly detected for peer " + peer_id + ": " + type);
+    aiworld::log_warn("Anomaly detected for peer " + peer_id + ": " + type);
     if (peer_states_[peer_id].cheat_flags > 3 && config_.enable_peer_blacklisting) {
         blacklist_peer(peer_id);
     }
@@ -45,7 +45,7 @@ void SecurityManager::record_anomaly(const std::string& peer_id, const std::stri
 void SecurityManager::update_reputation(const std::string& peer_id, int delta) {
     if (!config_.enable_reputation_system) return;
     peer_states_[peer_id].reputation += delta;
-    log_info("Peer " + peer_id + " reputation updated to " + std::to_string(peer_states_[peer_id].reputation));
+    aiworld::log_info("Peer " + peer_id + " reputation updated to " + std::to_string(peer_states_[peer_id].reputation));
     if (peer_states_[peer_id].reputation < config_.min_reputation && config_.enable_peer_blacklisting) {
         blacklist_peer(peer_id);
     }
@@ -98,50 +98,49 @@ std::vector<PeerMeshInfo> AOIMeshManager::get_current_mesh() const {
     return current_mesh_;
 }
 // --- Protocol Selection and Traffic Flow Implementation (Scaffold) ---
-AIWorldPlugin::ProtocolType current_protocol = AIWorldPlugin::ProtocolType::ZEROMQ;
+aiworld::AIWorldPlugin::ProtocolType aiworld_current_protocol = aiworld::AIWorldPlugin::ProtocolType::ZEROMQ;
 
-void AIWorldPlugin::set_protocol(ProtocolType proto) {
-    current_protocol = proto;
-    log_info("Protocol set to: " + std::to_string(static_cast<int>(proto)));
+void aiworld::AIWorldPlugin::set_protocol(ProtocolType proto) {
+    aiworld_current_protocol = proto;
+    aiworld::log_info("Protocol set to: " + std::to_string(static_cast<int>(proto)));
 }
 
-AIWorldPlugin::ProtocolType AIWorldPlugin::get_protocol() {
-    return current_protocol;
+aiworld::AIWorldPlugin::ProtocolType aiworld::AIWorldPlugin::get_protocol() {
+    return aiworld_current_protocol;
 }
 
-AIWorldPlugin::ProtocolType AIWorldPlugin::select_protocol_for_message(int message_type) {
+aiworld::AIWorldPlugin::ProtocolType aiworld::AIWorldPlugin::select_protocol_for_message(int message_type) {
     // For now, always use ZEROMQ for compatibility.
     // In future: switch based on message_type (e.g., QUIC for movement, gRPC for DB, etc.)
-    return current_protocol;
+    return aiworld_current_protocol;
 }
 
-void AIWorldPlugin::force_server_protocol() {
+void aiworld::AIWorldPlugin::force_server_protocol() {
     set_protocol(ProtocolType::ZEROMQ);
-    log_warn("Forcing all traffic to SERVER/ZeroMQ protocol (fallback)");
+    aiworld::log_warn("Forcing all traffic to SERVER/ZeroMQ protocol (fallback)");
 }
 // --- P2P Enable/Disable and Fallback Logic Implementation ---
-bool AIWorldPlugin::p2p_enabled = false;
 
-void AIWorldPlugin::set_p2p_enabled(bool enabled) {
+void aiworld::AIWorldPlugin::set_p2p_enabled(bool enabled) {
     // Thread-safe setter for P2P enable/disable
-    p2p_enabled = enabled;
-    log_info(std::string("P2P ") + (enabled ? "ENABLED" : "DISABLED") + " at runtime");
+    this->p2p_enabled = enabled;
+    aiworld::log_info(std::string("P2P ") + (enabled ? "ENABLED" : "DISABLED") + " at runtime");
 }
 
-bool AIWorldPlugin::is_p2p_enabled() {
-    return p2p_enabled;
+bool aiworld::AIWorldPlugin::is_p2p_enabled() {
+    return this->p2p_enabled;
 }
 
-void AIWorldPlugin::auto_configure_p2p() {
+void aiworld::AIWorldPlugin::auto_configure_p2p() {
     // TODO: Load from config file or environment variable
     // For now, default to false for maximum compatibility
     set_p2p_enabled(false);
-    log_info("Auto-configured P2P: DISABLED (default)");
+    aiworld::log_info("Auto-configured P2P: DISABLED (default)");
 }
 
-void AIWorldPlugin::fallback_to_server_only_mode() {
+void aiworld::AIWorldPlugin::fallback_to_server_only_mode() {
     set_p2p_enabled(false);
-    log_warn("Falling back to SERVER-ONLY mode (P2P forcibly disabled)");
+    aiworld::log_warn("Falling back to SERVER-ONLY mode (P2P forcibly disabled)");
 }
 namespace aiworld {
 
@@ -189,8 +188,9 @@ std::string AIWorldPlugin::handle_script_command(const std::string& command, con
     payload["args"] = args;
     // AIWorldMessage now expects IPCMessageType (enum class) as first argument
     // No cast needed, constructor signature matches
+    aiworld::AIWorldMessage msg(aiworld::IPCMessageType::AI_ACTION_REQUEST, aiworld::generate_correlation_id(), payload);
     if (!ipc_client->send_message(msg)) {
-        log_error("Failed to send script command to AIWorld server.");
+        aiworld::log_error("Failed to send script command to AIWorld server.");
         return "{\"error\": \"IPC send failed\"}";
     }
 

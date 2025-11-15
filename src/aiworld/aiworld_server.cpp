@@ -31,7 +31,7 @@ public:
             log_error("AIWorldServer: ZeroMQ context creation failed.");
             return false;
         }
-        zmq_socket = zmq_socket(zmq_context, ZMQ_REP);
+        zmq_socket = ::zmq_socket(zmq_context, ZMQ_REP);
         if (!zmq_socket) {
             log_error("AIWorldServer: ZeroMQ socket creation failed.");
             return false;

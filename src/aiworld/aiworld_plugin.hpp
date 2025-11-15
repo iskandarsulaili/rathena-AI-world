@@ -11,25 +11,31 @@
 // --- P2P Enable/Disable and Fallback Logic ---
 // This flag controls whether P2P is enabled for this plugin instance.
 // It must be settable at runtime and default to false for maximum compatibility.
-static bool p2p_enabled;
 
 // Set P2P enable/disable at runtime (thread-safe)
-static void set_p2p_enabled(bool enabled);
+    void set_p2p_enabled(bool enabled);
 
 // Query P2P enable/disable state
-static bool is_p2p_enabled();
+    bool is_p2p_enabled();
 
 // Called by the plugin on startup to auto-detect P2P config (from config file or env)
-static void auto_configure_p2p();
+    void auto_configure_p2p();
 
 // Called by the plugin to handle fallback (e.g., on connection failure or admin override)
-static void fallback_to_server_only_mode();
+    void fallback_to_server_only_mode();
 namespace aiworld {
 
 class AIWorldPlugin {
 public:
     AIWorldPlugin();
     ~AIWorldPlugin();
+
+    // P2P Enable/Disable and Fallback Logic
+    bool p2p_enabled = false;
+    void set_p2p_enabled(bool enabled);
+    bool is_p2p_enabled();
+    void auto_configure_p2p();
+    void fallback_to_server_only_mode();
 
     // Initialize plugin (called on map-server/char-server startup)
     bool initialize();
