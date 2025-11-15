@@ -150,6 +150,9 @@ public:
     // Validate signature for a message/packet
     bool validate_signature(const std::string& peer_id, const std::string& payload, const std::string& signature);
 
+    // Register a peer's public key (hex-encoded ED25519)
+    void register_peer_pubkey(const std::string& peer_id, const std::string& pubkey_hex);
+
     // Blacklist a peer
     void blacklist_peer(const std::string& peer_id);
 
@@ -168,4 +171,5 @@ public:
 private:
     SecurityConfig config_;
     std::unordered_map<std::string, PeerSecurityState> peer_states_;
+    std::unordered_map<std::string, std::string> peer_pubkeys_; // peer_id -> hex-encoded pubkey
 };

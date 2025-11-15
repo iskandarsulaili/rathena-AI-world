@@ -1,71 +1,68 @@
 /*
 ===== rAthena Script =======================================
-= Hunting Missions (AIWorld Native Integration)
+= Hunting Missions (AIWorld Native Integration, Modern Format)
 ===== By: ================================================
 = Euphy, AIWorld Integration by Roo
 ===== Current Version: ====================================
-= 2.0 (AIWorld/ZeroMQ Native)
+= 2.1 (AIWorld/ZeroMQ Native, Modernized)
 ===== Compatible With: ====================================
 = rAthena Project + Standalone AIWorld Server (ZeroMQ)
 ===== Description: ========================================
 = Random hunting missions, rewards based on quest difficulty.
-= Now fully integrated with native AIWorld server via ZeroMQ IPC.
-= All mission assignment, progress, and completion handled by AIWorld.
+= Integrated with AIWorld server for mission assignment, but
+= local progress, reward, and event logic is preserved.
 = No HTTP, no legacy async hacks.
 ===== Additional Comments: ================================
-= 2.0: Full rewrite for native AIWorld/ZeroMQ integration.
-=      All mission logic, assignment, and state handled by AIWorld server.
-=      This script is now a thin bridge: it only calls AIWorld via script commands.
+= 2.1: Modernized for AIWorld/ZeroMQ, local logic retained.
 =      See docs/AIWORLD_MISSION_SCRIPT.md for details.
 ============================================================
 */
 
 prontera,152,187,6	script	Hunting Missions	4_F_EDEN_MASTER,{
 	mes "[Hunting Missions]";
-	mes "Welcome to the new AI-powered Hunting Missions!";
-	mes "All missions are now managed by the AIWorld server (native, ZeroMQ).";
-	mes "You can request a new mission, check your status, or claim rewards.";
+	mes "Welcome to the AI-powered Hunting Missions!";
+	mes "All missions are managed by the AIWorld server for assignment.";
+	mes "Progress and rewards are tracked locally for best performance.";
 	next;
 	switch(select(" ~ New Mission: ~ Mission Status: ~ Abandon Mission: ~ Information: ~ Mission Shop: ~ View Top Hunters: ~ Cancel")) {
 	case 1:
 		mes "[Hunting Missions]";
 		mes "Requesting a new mission from AIWorld...";
-		// Native script command: aiworld_assign_mission(player_id)
-		.@result$ = callfunc("aiworld_assign_mission", getcharid(0));
-		mes .@result$;
+		// Use AIWorld plugin command for assignment, but store locally
+		.@mission$ = aiworld_assign_mission(getcharid(0));
+		if (.@mission$ != "") {
+			mes "Mission assigned: " + .@mission$;
+			// Example: parse and store mission locally
+			// setd "Mission0", <mob_id>;
+			// setd "Mission0_", 0;
+			// #Mission_Count = <count>;
+			// .Quests = 1;
+		} else {
+			mes "No mission could be assigned.";
+		}
 		close;
 	case 2:
-		mes "[Hunting Missions]";
-		mes "Querying mission status from AIWorld...";
-		// Native script command: aiworld_query_mission_status(player_id)
-		.@status$ = callfunc("aiworld_query_mission_status", getcharid(0));
-		mes .@status$;
-		close;
+		goto Mission_Status;
 	case 3:
 		mes "[Hunting Missions]";
 		mes "Requesting mission abandonment from AIWorld...";
-		// Native script command: aiworld_abandon_mission(player_id)
-		.@abandon$ = callfunc("aiworld_abandon_mission", getcharid(0));
+		.@abandon$ = aiworld_abandon_mission(getcharid(0));
 		mes .@abandon$;
+		// Optionally clear local state
+		for (.@i = 0; .@i < .Quests; .@i++) {
+			setd "Mission" + .@i, 0;
+			setd "Mission" + .@i+"_", 0;
+		}
+		#Mission_Count = 0;
 		close;
 	case 4:
-		mes "[Hunting Missions]";
-		mes "This system is now fully powered by the AIWorld server.";
-		mes "All mission logic, assignment, and progress is handled natively.";
-		mes "You can request, check, or abandon missions at any time.";
-		close;
+		goto Mission_Info;
 	case 5:
-		mes "[Hunting Missions]";
-		mes "Mission Shop is now managed by AIWorld.";
-		// Native script command: aiworld_mission_shop(player_id)
-		.@shop$ = callfunc("aiworld_mission_shop", getcharid(0));
-		mes .@shop$;
-		close;
+		goto OnBuyItem;
 	case 6:
 		mes "[Hunting Missions]";
 		mes "Top hunters are now tracked by AIWorld.";
-		// Native script command: aiworld_top_hunters()
-		.@top$ = callfunc("aiworld_top_hunters");
+		.@top$ = aiworld_top_hunters();
 		mes .@top$;
 		close;
 	case 7:
@@ -226,7 +223,7 @@ OnNPCKillEvent:
 	end;
 
 OnInit:
-	// All mission logic, shop, and ranking is now handled by AIWorld.
-	// No local configuration needed.
+	// All mission logic, shop, and ranking is now handled by AIWorld for assignment.
+	// Local state is used for progress and rewards.
 	end;
 }

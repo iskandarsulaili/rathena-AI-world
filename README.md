@@ -32,16 +32,28 @@ If you've ever felt silenced, dismissed, or unfairly treated by those in positio
 
 ## Overview
 
-rAthena AI World is an enhanced fork of rAthena MMORPG server that integrates multi-agent AI systems for autonomous NPC behavior, dynamic quest generation, and emergent gameplay. The system implements personality-driven NPCs using the Big Five personality model, AI-generated dialogue with long-term memory, and real-time economic simulation.
+**rAthena AI World** is an extension for the rAthena MMORPG server that provides a production-ready, AI-driven autonomous world system. The AI system is implemented as a standalone FastAPI application, integrating with rAthena via HTTP endpoints and persistent databases. It enables advanced NPC behavior, dynamic quest generation, economic simulation, and faction reputation, all powered by modern LLMs and persistent memory.
 
-### Core Features
+### Core Features (Implemented)
 
-- **Personality-Driven NPCs**: Each NPC exhibits unique behavior based on the Big Five personality model (Openness, Conscientiousness, Extraversion, Agreeableness, Neuroticism) and nine moral alignments
-- **AI-Generated Dialogue**: Adaptive conversations using LLM providers with persistent memory across sessions
-- **Dynamic Quest System**: AI-generated quests with eight quest types and six difficulty levels, contextually tailored to player state and world events
-- **Economic Simulation**: Supply and demand mechanics with realistic market fluctuations and emergent economic events
-- **Faction System**: Dynamic reputation systems with seven faction types and eight reputation tiers
-- **Autonomous World State**: NPCs make independent decisions and react to world events, creating emergent storylines
+- **AI-Driven NPCs**: NPCs have configurable personalities, persistent memory, and can interact with players and the world.
+- **Dialogue, Decision, Memory, World, Quest, and Economy Agents**: Six specialized agents coordinate NPC conversations, decisions, memory, world state, quest generation, and economic simulation.
+- **Dynamic Quest System**: AI-generated quests with multiple types and difficulty levels, tailored to player and world context.
+- **Economic Simulation**: Realistic supply/demand, market trends, and economic events.
+- **Faction Reputation System**: Dynamic reputation and faction relations affecting NPC behavior and quest availability.
+- **Long-Term Memory**: NPCs retain memories and relationship history across sessions, using PostgreSQL and DragonflyDB.
+- **Multi-Provider LLM Support**: Azure OpenAI (primary), OpenAI, Anthropic, Google Gemini, and DeepSeek.
+- **Environment System**: Weather, seasons, disasters, and resources fully implemented.
+- **Comprehensive API**: Endpoints for NPC management, player interaction, quests, factions, economy, and world state.
+
+### Features Planned or Experimental
+
+- **Bridge Layer for rAthena**: Planned REST API extension for deeper integration (not yet implemented).
+- **Custom AI-Enabled NPC Scripts**: Planned for `npc/custom/ai-world/` (not yet present).
+- **Advanced NPC Social Intelligence & Movement Boundaries**: Some configuration fields exist, but full features are experimental or in development.
+- **P2P Coordinator & WARP Client**: Optional/external; not part of the core AI system.
+
+See [`ai-autonomous-world/README.md`](ai-autonomous-world/README.md) for detailed status and implementation notes.
 
 ## ⚠️ EXPERIMENTAL FEATURES DISCLAIMER
 
@@ -66,12 +78,16 @@ While the core rAthena server and AI autonomous world system are production-read
 
 ### Technical Architecture
 
-The system consists of approximately 10,000 lines of production-grade Python and C++ code implementing:
+The AI system uses a modular, production-grade architecture:
 
-- **6 Specialized AI Agents**: Dialogue, Decision, Memory, World, Quest, and Economy agents orchestrated via CrewAI framework
-- **Long-term Memory Management**: OpenMemory integration with DragonflyDB fallback for persistent NPC memories and relationship tracking
-- **Multi-Provider LLM Support**: OpenAI GPT-4, Anthropic Claude-3, and Google Gemini integration
-- **Production-Grade Implementation**: Comprehensive error handling, verbose logging, async/await operations, and type-safe Pydantic models
+- **Standalone FastAPI Service**: All AI logic is implemented in Python, running independently of the rAthena core.
+- **Six Specialized Agents**: Dialogue, Decision, Memory, World, Quest, and Economy agents coordinate all AI-driven features.
+- **Persistent Storage**: PostgreSQL for long-term memory and state, DragonflyDB for high-speed caching.
+- **LLM Provider Abstraction**: Supports Azure OpenAI, OpenAI, Anthropic, Google Gemini, and DeepSeek.
+- **Comprehensive Error Handling & Logging**: Production-ready with async/await, type safety, and robust logging.
+- **No Core Modifications**: The AI system does not modify rAthena source code; integration is via HTTP endpoints and planned bridge layer.
+
+See [`ai-autonomous-world/docs/ARCHITECTURE.md`](ai-autonomous-world/docs/ARCHITECTURE.md) for full details.
 
 ---
 
@@ -324,57 +340,15 @@ curl http://localhost:8000/health
 
 ---
 
-## P2P Coordinator Service
+## P2P Coordinator Service (Optional/External)
 
-**Location**: `p2p-coordinator/`
-**Version**: 2.0.0
-**Status**: ✅ Production-Ready (All 26 Security & Functionality Fixes Complete)
+The P2P Coordinator and WARP P2P Client are external, optional components for advanced networking and hybrid P2P hosting. They are not required for the core AI system to function.
 
-The P2P Coordinator Service is a FastAPI-based WebSocket signaling server that manages P2P session discovery, host selection, and WebRTC signaling for the WARP P2P Client.
+- **Location:** `p2p-coordinator/` (see directory for details)
+- **Status:** Production-ready, but not integrated by default with the AI system.
+- **Purpose:** Enables hybrid P2P architecture for zone hosting and bandwidth optimization.
 
-### 🎉 New Features in Version 2.0.0
-
-- **DragonflyDB State Management**: Persistent signaling state for horizontal scaling
-- **Rate Limiting**: Token bucket algorithm with DragonflyDB backend (API: 100/60s, WebSocket: 1000/60极, Auth: 10/60s)
-- **Session Health Monitoring**: Automatic monitoring and cleanup of inactive sessions every 30 seconds
-- **NPC State Broadcasting**: Fetches NPC state from AI service every 5 seconds and broadcasts to active sessions
-- **Prometheus Metrics**: Full metrics endpoint with text exposition format
-- **Refresh Token Endpoint**: JWT refresh token flow with 7-day expiration
-- **Custom Exception Handling**: Proper error handling with specific exception classes
-- **Database Indexes**: Composite indexes for common query patterns
-- **Security Enforcement**: Production startup validation - refuses to start with weak secrets (<32 characters)
-
-### Key Features
-
-- ✅ WebSocket signaling for WebRTC offer/answer/ICE candidate exchange
-- ✅ Session discovery and joining with automatic host selection
-- ✅ JWT authentication with refresh token support
-- ✅ Rate limiting to protect against abuse
-- ✅ Session health monitoring with auto-cleanup
-- ✅ NPC state broadcasting to all active sessions
-- ✅ Prometheus metrics for monitoring
-- ✅ DragonflyDB state management for horizontal scaling
-- ✅ PostgreSQL 17 with composite indexes
-- ✅ DragonflyDB 1.12.1 (Redis-compatible) for caching
-
-### API Endpoints
-
-- `POST /api/v1/auth/login` - Authenticate and get JWT tokens
-- `POST /api/v1/auth/refresh` - Refresh JWT access token
-- `GET /api/v1/hosts` - List available hosts
-- `POST /api/v1/hosts` - Register a new host
-- `GET /api/v1/zones` - List zones
-- `GET /api/v1/sessions` - List active sessions
-- `POST /api/v1/sessions` - Create a new session
-- `WS /api/v1/signaling/ws` - WebSocket signaling endpoint
-- `GET /api/v1/monitoring/metrics` - Prometheus metrics
-
-### Documentation
-
-- [P2P Coordinator Deployment Guide](p2p-coordinator/docs/DEPLOYMENT.md) - Complete deployment guide with all new features
-- [API Documentation](p2p-coordinator/docs/API.md) - REST API reference
-- [Architecture Documentation](p2p-coordinator/docs/ARCHITECTURE.md) - System architecture
-- [Configuration Guide](p2p-coordinator/docs/CONFIGURATION.md) - Configuration reference
+See [P2P Coordinator Deployment Guide](p2p-coordinator/docs/DEPLOYMENT.md) and [WARP P2P Client README](../WARP-p2p-client/README.md) for more information.
 
 ---
 

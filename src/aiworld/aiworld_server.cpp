@@ -83,13 +83,107 @@ private:
                 std::string corr_id = req.value("correlation_id", "");
                 nlohmann::json payload = req.value("payload", nlohmann::json::object());
 
-                // Example: echo back with status
+                // Core logic routers
+                static EntityLogic entity_logic;
+                static MissionLogic mission_logic;
+                static EventLogic event_logic;
+
                 response_json["message_type"] = msg_type;
                 response_json["correlation_id"] = corr_id;
-                response_json["payload"] = {
-                    {"status", "ok"},
-                    {"echo", payload}
-                };
+
+                switch (static_cast<IPCMessageType>(msg_type)) {
+                    case IPCMessageType::ENTITY_STATE_SYNC: {
+                        // Upsert or get entity state
+                        std::string entity_id = payload.value("entity_id", "");
+                        std::string entity_type = payload.value("entity_type", "");
+                        nlohmann::json state = payload.value("state", nlohmann::json::object());
+                        if (!entity_id.empty() && !entity_type.empty()) {
+                            entity_logic.upsert_entity(entity_id, entity_type, state);
+                            response_json["payload"] = {{"status", "entity upserted"}, {"entity_id", entity_id}};
+                        } else if (!entity_id.empty()) {
+                            auto ent = entity_logic.get_entity(entity_id);
+                            if (ent) {
+                                response_json["payload"] = {{"status", "entity found"}, {"entity", {
+                                    {"entity_id", ent->entity_id},
+                                    {"entity_type", ent->entity_type},
+                                    {"state", ent->state},
+                                    {"created_at", ent->created_at},
+                                    {"updated_at", ent->updated_at}
+                                }}};
+                            } else {
+                                response_json["payload"] = {{"status", "not found"}, {"entity_id", entity_id}};
+                            }
+                        } else {
+                            response_json["payload"] = {{"error", "Missing entity_id or entity_type"}};
+                        }
+                        break;
+                    }
+                    case IPCMessageType::MISSION_ASSIGNMENT: {
+                        // Create or get mission
+                        std::string assignee_id = payload.value("assignee_id", "");
+                        nlohmann::json mission_data = payload.value("mission_data", nlohmann::json::object());
+                        if (!assignee_id.empty() && !mission_data.empty()) {
+                            std::string mission_id = mission_logic.create_mission(assignee_id, mission_data);
+                            response_json["payload"] = {{"status", "mission created"}, {"mission_id", mission_id}};
+                        } else if (payload.contains("mission_id")) {
+                            std::string mission_id = payload.value("mission_id", "");
+                            auto m = mission_logic.get_mission(mission_id);
+                            if (m) {
+                                response_json["payload"] = {{"status", "mission found"}, {"mission", {
+                                    {"mission_id", m->mission_id},
+                                    {"assignee_id", m->assignee_id},
+                                    {"mission_data", m->mission_data},
+                                    {"status", m->status},
+                                    {"created_at", m->created_at},
+                                    {"updated_at", m->updated_at}
+                                }}};
+                            } else {
+                                response_json["payload"] = {{"status", "not found"}, {"mission_id", mission_id}};
+                            }
+                        } else {
+                            response_json["payload"] = {{"error", "Missing assignee_id or mission_data"}};
+                        }
+                        break;
+                    }
+                    case IPCMessageType::EVENT_NOTIFICATION: {
+                        // Create or get event
+                        std::string event_type = payload.value("event_type", "");
+                        nlohmann::json event_data = payload.value("event_data", nlohmann::json::object());
+                        if (!event_type.empty() && !event_data.empty()) {
+                            std::string event_id = event_logic.create_event(event_type, event_data);
+                            response_json["payload"] = {{"status", "event created"}, {"event_id", event_id}};
+                        } else if (payload.contains("event_id")) {
+                            std::string event_id = payload.value("event_id", "");
+                            auto e = event_logic.get_event(event_id);
+                            if (e) {
+                                response_json["payload"] = {{"status", "event found"}, {"event", {
+                                    {"event_id", e->event_id},
+                                    {"event_type", e->event_type},
+                                    {"event_data", e->event_data},
+                                    {"created_at", e->created_at}
+                                }}};
+                            } else {
+                                response_json["payload"] = {{"status", "not found"}, {"event_id", event_id}};
+                            }
+                        } else {
+                            response_json["payload"] = {{"error", "Missing event_type or event_data"}};
+                        }
+                        break;
+                    }
+                    case IPCMessageType::AI_ACTION_REQUEST: {
+                        // Placeholder for AI action logic (extend as needed)
+                        response_json["payload"] = {{"status", "AI action request received"}, {"details", payload}};
+                        break;
+                    }
+                    case IPCMessageType::HEARTBEAT: {
+                        response_json["payload"] = {{"status", "alive"}};
+                        break;
+                    }
+                    default: {
+                        response_json["payload"] = {{"error", "Unknown or unimplemented message_type"}, {"type", msg_type}};
+                        break;
+                    }
+                }
             } catch (const std::exception& e) {
                 response_json["message_type"] = 99;
                 response_json["payload"] = {{"error", e.what()}};
