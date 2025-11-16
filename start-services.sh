@@ -86,15 +86,15 @@ else
 fi
 
 # ============================================
-# 6. Start P2P Coordinator Service
+# 6. Start P2P Coordinator Service (C++ version)
 # ============================================
-print_step "Starting P2P Coordinator Service..."
-if [ -d p2p-coordinator/venv ]; then
+print_step "Starting P2P Coordinator Service (C++ version)..."
+if [ -f src/p2p-coordinator/p2p_coordinator ]; then
     screen -S p2p-coordinator -X quit 2>/dev/null || true
-    screen -dmS p2p-coordinator bash -c "cd p2p-coordinator/coordinator-service && ../venv/bin/python main.py"
-    print_success "P2P Coordinator Service started"
+    screen -dmS p2p-coordinator bash -c "./src/p2p-coordinator/p2p_coordinator --config src/p2p-coordinator/config/p2p_coordinator.conf"
+    print_success "P2P Coordinator Service (C++) started"
 else
-    print_warning "P2P Coordinator virtual environment not found. Please set up Python venv in p2p-coordinator."
+    print_warning "P2P Coordinator binary not found at src/p2p-coordinator/p2p_coordinator"
 fi
 
 # ============================================
