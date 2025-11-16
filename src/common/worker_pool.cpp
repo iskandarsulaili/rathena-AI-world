@@ -5,8 +5,17 @@
 #include <iostream>
 #include <algorithm>
 #include <cmath>
+#include <nlohmann/json.hpp>
 
 WorkerPool::WorkerPool(size_t num_workers) {
+    nlohmann::json log_start = {
+        {"timestamp", std::chrono::system_clock::to_time_t(std::chrono::system_clock::now())},
+        {"level", "INFO"},
+        {"service", "worker_pool"},
+        {"event", "startup"},
+        {"worker_count", num_workers}
+    };
+    std::cout << log_start.dump() << std::endl;
     for (size_t i = 0; i < num_workers; ++i) {
         auto worker = std::make_unique<WorkerThread>();
         worker->thread = std::thread(&WorkerPool::worker_loop, this, i);
@@ -16,12 +25,27 @@ WorkerPool::WorkerPool(size_t num_workers) {
 
 WorkerPool::~WorkerPool() {
     stop();
+    nlohmann::json log_shutdown = {
+        {"timestamp", std::chrono::system_clock::to_time_t(std::chrono::system_clock::now())},
+        {"level", "INFO"},
+        {"service", "worker_pool"},
+        {"event", "shutdown"}
+    };
+    std::cout << log_shutdown.dump() << std::endl;
 }
 
 void WorkerPool::start() {
     for (auto& worker : workers_) {
         worker->running = true;
     }
+    nlohmann::json log_start = {
+        {"timestamp", std::chrono::system_clock::to_time_t(std::chrono::system_clock::now())},
+        {"level", "INFO"},
+        {"service", "worker_pool"},
+        {"event", "workers_started"},
+        {"worker_count", workers_.size()}
+    };
+    std::cout << log_start.dump() << std::endl;
 }
 
 void WorkerPool::stop() {
@@ -33,6 +57,14 @@ void WorkerPool::stop() {
         if (worker->thread.joinable())
             worker->thread.join();
     }
+    nlohmann::json log_stop = {
+        {"timestamp", std::chrono::system_clock::to_time_t(std::chrono::system_clock::now())},
+        {"level", "INFO"},
+        {"service", "worker_pool"},
+        {"event", "workers_stopped"},
+        {"worker_count", workers_.size()}
+    };
+    std::cout << log_stop.dump() << std::endl;
 }
 
 void WorkerPool::enqueue_task(const WorkerTask& task) {
@@ -44,12 +76,29 @@ void WorkerPool::enqueue_task(const WorkerTask& task) {
         workers_[idx]->task_queue.push(task);
     }
     workers_[idx]->cv.notify_one();
+    nlohmann::json log_task = {
+        {"timestamp", std::chrono::system_clock::to_time_t(std::chrono::system_clock::now())},
+        {"level", "DEBUG"},
+        {"service", "worker_pool"},
+        {"event", "task_enqueued"},
+        {"worker_index", idx}
+    };
+    std::cout << log_task.dump() << std::endl;
 }
 
 void WorkerPool::assign_entity(const std::string& entity_id, float x, float y, float z) {
     std::lock_guard<std::mutex> lock(entity_map_mutex);
     size_t idx = select_worker_for_entity(x, y, z);
     entity_to_worker_[entity_id] = idx;
+    nlohmann::json log_assign = {
+        {"timestamp", std::chrono::system_clock::to_time_t(std::chrono::system_clock::now())},
+        {"level", "DEBUG"},
+        {"service", "worker_pool"},
+        {"event", "entity_assigned"},
+        {"entity_id", entity_id},
+        {"worker_index", idx}
+    };
+    std::cout << log_assign.dump() << std::endl;
 }
 
 void WorkerPool::remove_entity(const std::string& entity_id) {

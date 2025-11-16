@@ -8,6 +8,8 @@
 #include <mutex>
 #include <vector>
 #include <chrono>
+#include <openssl/evp.h>
+#include <openssl/err.h>
 
 struct CheatFlags {
     int speed_violations = 0;
@@ -54,4 +56,12 @@ private:
     std::unordered_map<std::string, bool> blacklist_;
     std::unordered_map<std::string, double> worker_cpu_;
     std::unordered_map<std::string, size_t> worker_entities_;
+
+    // Peer public key cache (loaded from DragonflyDB)
+    std::unordered_map<std::string, std::vector<uint8_t>> peer_public_keys_;
+
+    // Helper to load public keys from DragonflyDB
+    void load_peer_public_keys_from_dragonfly();
+    // Helper to get public key for a peer
+    std::vector<uint8_t> get_peer_public_key(const std::string& peer_id);
 };

@@ -43,8 +43,21 @@ public:
     void prune_low_score_peers();
     void refresh_mesh();
 
-    // DragonflyDB integration (stub for now)
+    // DragonflyDB integration
     void sync_with_dragonfly();
+
+    // Peer discovery (DHT/Kademlia)
+    void discover_peers(const std::string& target_id);
+    void update_dht(const PeerInfo& peer);
+    std::vector<PeerInfo> query_dht(const std::string& interest);
+
+    // AOI scoring and dynamic topology
+    float score_peer(const PeerInfo& peer, float x, float y, float z) const;
+    void prune_by_score(float min_score, float x, float y, float z);
+
+    // Geohash spatial query (DragonflyDB)
+    std::vector<PeerInfo> geohash_query(float x, float y, float z, float radius);
+
 
     // Logging and diagnostics
     size_t peer_count() const;
@@ -53,4 +66,11 @@ public:
 private:
     mutable std::mutex mesh_mutex_;
     std::unordered_map<std::string, PeerInfo> peers_;
+    // DHT/Kademlia structures
+    std::unordered_map<std::string, std::vector<std::string>> dht_table_; // interest -> peer_ids
+    // DragonflyDB connection
+    std::string dragonfly_host_;
+    int dragonfly_port_;
+    // Helper for geohash
+    std::string geohash(float x, float y) const;
 };

@@ -132,7 +132,52 @@ int main(int argc, char* argv[]) {
 
     // Load config (optional, can extend)
     std::ifstream config_file(config_path);
-    if (!config_file) {
+    nlohmann::json config_json;
+    bool config_loaded = false;
+    if (config_file) {
+        try {
+            std::string config_str((std::istreambuf_iterator<char>(config_file)), std::istreambuf_iterator<char>());
+            // Simple config parsing: look for lines "key = value"
+            for (const auto& line : nlohmann::json::array({config_str})) {
+                // TODO: Replace with proper TOML/INI/JSON parsing if needed
+            }
+            // Example: parse p2p_enabled and worker_count
+            size_t found_p2p = config_str.find("p2p_enabled = false");
+            if (found_p2p != std::string::npos) {
+                p2p_enabled = false;
+            }
+            size_t found_workers = config_str.find("worker_count = ");
+            if (found_workers != std::string::npos) {
+                size_t pos = config_str.find("worker_count = ");
+                size_t end = config_str.find("\n", pos);
+                std::string val = config_str.substr(pos + 14, end - (pos + 14));
+                if (val != "\"auto\"") {
+                    try {
+                        num_workers = std::stoul(val);
+                    } catch (...) {}
+                }
+            }
+            config_loaded = true;
+            nlohmann::json log_config = {
+                {"timestamp", std::chrono::system_clock::to_time_t(std::chrono::system_clock::now())},
+                {"level", "INFO"},
+                {"event", "config_loaded"},
+                {"config_path", config_path},
+                {"p2p_enabled", p2p_enabled},
+                {"worker_count", num_workers}
+            };
+            std::cout << log_config.dump() << std::endl;
+        } catch (const std::exception& ex) {
+            nlohmann::json log_err = {
+                {"timestamp", std::chrono::system_clock::to_time_t(std::chrono::system_clock::now())},
+                {"level", "ERROR"},
+                {"event", "config_parse_error"},
+                {"config_path", config_path},
+                {"message", ex.what()}
+            };
+            std::cerr << log_err.dump() << std::endl;
+        }
+    } else {
         nlohmann::json log_warn = {
             {"timestamp", std::chrono::system_clock::to_time_t(std::chrono::system_clock::now())},
             {"level", "WARN"},
